@@ -3,6 +3,6 @@
 
 int main() {
 	Machine machine;
-	std::cin.ignore();
+	machine.Run();
 	return 0;
 }

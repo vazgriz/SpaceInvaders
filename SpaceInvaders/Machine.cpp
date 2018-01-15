@@ -20,6 +20,12 @@ Machine::~Machine() {
 	emuThread.join();
 }
 
+void Machine::Run() {
+	while (!glfwWindowShouldClose(renderer.GetWindow())) {
+		glfwPollEvents();
+	}
+}
+
 void Machine::Emulate() {
 	while (running) {
 		cpu.Step();

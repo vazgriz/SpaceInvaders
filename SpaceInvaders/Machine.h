@@ -9,6 +9,8 @@ public:
 	Machine();
 	~Machine();
 
+	void Run();
+
 private:
 	CPU cpu;
 	Renderer renderer;
