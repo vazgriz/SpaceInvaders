@@ -82,6 +82,7 @@ void CPU::Step() {
 			UnrecognizedInstruction();
 			break;
 		case 0x00:	//NOP
+		case 0x08:
 			break;
 		case 0x01:	//LXI B, word
 			state.c = inst[1];
