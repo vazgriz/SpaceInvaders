@@ -468,7 +468,7 @@ void CPU::Step() {
 		}
 		case 0xCD:	//CALL addr
 		{
-			Push(state.pc);
+			Push(state.pc + 2);
 			state.pc = Combine(inst[1], inst[2]);
 			break;
 		}
