@@ -2,6 +2,9 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <iomanip>
+
+#include "Disassemble.h"
 
 CPU::CPU() {
 	state = {};
@@ -58,7 +61,8 @@ void CPU::SetAuxCarryFlag(uint8_t a, uint8_t b) {
 
 void CPU::Step() {
 	uint8_t* inst = &state.memory[state.pc];
-	std::cout << std::hex << state.pc << "\n";
+	std::cout << std::hex << std::setw(4) << state.pc << " ";
+	Disassemble(inst);
 	state.pc++;
 
 	switch (*inst) {
