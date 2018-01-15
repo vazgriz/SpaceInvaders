@@ -1,9 +1,10 @@
 #include "Disassemble.h"
 #include <iostream>
+#include <string>
 
 void Disassemble(const uint8_t* inst) {
+	std::cout << std::hex << static_cast<uint16_t>(inst[0]) << " ";
 	switch (inst[0]) {
-		std::cout << std::hex;
 		case 0x00:
 			std::cout << "NOP 0x00";
 			break;
