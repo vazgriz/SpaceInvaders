@@ -464,14 +464,12 @@ void CPU::Step() {
 		}
 		case 0xC9:	//RET
 		{
-			state.pc = Combine(state.memory[state.sp], state.memory[state.sp + 1]);
-			state.sp += 2;
+			state.pc = Pop();
 			break;
 		}
 		case 0xCD:	//CALL addr
 		{
-			Split(state.pc, state.memory[state.sp - 2], state.memory[state.sp - 1]);
-			state.sp -= 2;
+			Push(state.pc);
 			state.pc = Combine(inst[1], inst[2]);
 			break;
 		}
