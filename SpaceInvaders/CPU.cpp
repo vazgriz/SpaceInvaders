@@ -538,5 +538,10 @@ void CPU::Step() {
 			state.pc += 1;
 			break;
 		}
+		case 0xFF:	//RST 7
+		{
+			Push(state.sp);
+			state.sp = 7 * 8;
+		}
 	}
 }
