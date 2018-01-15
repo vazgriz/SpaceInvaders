@@ -774,7 +774,7 @@ void Disassemble(const uint8_t* inst) {
 			std::cout << "JM     " << static_cast<uint16_t>(inst[2]) << static_cast<uint16_t>(inst[1]);
 			break;
 		case 0xfb:
-			std::cout << "EI     " << static_cast<uint16_t>(inst[1]);
+			std::cout << "EI";
 			break;
 		case 0xfc:
 			std::cout << "CM     " << static_cast<uint16_t>(inst[2]) << static_cast<uint16_t>(inst[1]);
