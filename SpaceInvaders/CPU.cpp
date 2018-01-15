@@ -525,6 +525,9 @@ void CPU::Step() {
 			Push(Combine(psw, state.a));
 			break;
 		}
+		case 0xFB:	//EI
+			state.interruptEnable = 1;
+			break;
 		case 0xFE:	//CPI byte
 		{
 			uint8_t temp = state.a - inst[1];
