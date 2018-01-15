@@ -344,7 +344,7 @@ void Disassemble(const uint8_t* inst) {
 			std::cout << "MOV    L M";
 			break;
 		case 0x6f:
-			std::cout << "MOV    C A";
+			std::cout << "MOV    L A";
 			break;
 
 		case 0x70:
@@ -724,7 +724,7 @@ void Disassemble(const uint8_t* inst) {
 			std::cout << "JPE    " << static_cast<uint16_t>(inst[2]) << static_cast<uint16_t>(inst[1]);
 			break;
 		case 0xeb:
-			std::cout << "XCHG   " << static_cast<uint16_t>(inst[1]);
+			std::cout << "XCHG";
 			break;
 		case 0xec:
 			std::cout << "CPE    " << static_cast<uint16_t>(inst[2]) << static_cast<uint16_t>(inst[1]);
