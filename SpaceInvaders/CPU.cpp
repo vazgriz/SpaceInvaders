@@ -482,9 +482,7 @@ void CPU::Step() {
 			state.pc += 1;
 			break;
 		case 0xD5:	//PUSH D
-			state.memory[state.sp - 2] = state.e;
-			state.memory[state.sp - 1] = state.d;
-			state.sp -= 2;
+			Push(Combine(state.e, state.d));
 			break;
 		case 0xE1:	//POP H
 			Split(Pop(), state.l, state.h);
