@@ -5,7 +5,7 @@ void Disassemble(const uint8_t* inst) {
 	switch (inst[0]) {
 		std::cout << std::hex;
 		case 0x00:
-			std::cout << "NOP";
+			std::cout << "NOP 0x00";
 			break;
 		case 0x01:
 			std::cout << "LXI    B " << static_cast<uint16_t>(inst[2]) << static_cast<uint16_t>(inst[1]);
@@ -29,7 +29,7 @@ void Disassemble(const uint8_t* inst) {
 			std::cout << "RLC";
 			break;
 		case 0x08:
-			std::cout << "NOP";
+			std::cout << "NOP 0x08";
 			break;
 		case 0x09:
 			std::cout << "DAD    B";
@@ -54,7 +54,7 @@ void Disassemble(const uint8_t* inst) {
 			break;
 
 		case 0x10:
-			std::cout << "NOP";
+			std::cout << "NOP 0x10";
 			break;
 		case 0x11:
 			std::cout << "LXI    D " << static_cast<uint16_t>(inst[2]) << static_cast<uint16_t>(inst[1]);
@@ -78,7 +78,7 @@ void Disassemble(const uint8_t* inst) {
 			std::cout << "RAL";
 			break;
 		case 0x18:
-			std::cout << "NOP";
+			std::cout << "NOP 0x18";
 			break;
 		case 0x19:
 			std::cout << "DAD    D";
@@ -103,7 +103,7 @@ void Disassemble(const uint8_t* inst) {
 			break;
 
 		case 0x20:
-			std::cout << "NOP";
+			std::cout << "NOP 0x20";
 			break;
 		case 0x21:
 			std::cout << "LXI    H " << static_cast<uint16_t>(inst[2]) << static_cast<uint16_t>(inst[1]);
@@ -127,7 +127,7 @@ void Disassemble(const uint8_t* inst) {
 			std::cout << "DAA";
 			break;
 		case 0x28:
-			std::cout << "NOP";
+			std::cout << "NOP 0x28";
 			break;
 		case 0x29:
 			std::cout << "DAD    H";
@@ -152,7 +152,7 @@ void Disassemble(const uint8_t* inst) {
 			break;
 
 		case 0x30:
-			std::cout << "NOP";
+			std::cout << "NOP 0x30";
 			break;
 		case 0x31:
 			std::cout << "LXI    SP " << static_cast<uint16_t>(inst[2]) << static_cast<uint16_t>(inst[1]);
@@ -176,7 +176,7 @@ void Disassemble(const uint8_t* inst) {
 			std::cout << "STC";
 			break;
 		case 0x38:
-			std::cout << "NOP";
+			std::cout << "NOP 0x38";
 			break;
 		case 0x39:
 			std::cout << "DAD    SP";
