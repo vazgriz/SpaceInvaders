@@ -59,6 +59,17 @@ void CPU::SetAuxCarryFlag(uint8_t a, uint8_t b) {
 	state.conditionCodes.ac = (a + b) > 16;
 }
 
+void CPU::Push(uint16_t value) {
+	Split(value, state.memory[state.sp - 2], state.memory[state.sp - 1]);
+	state.sp -= 2;
+}
+
+uint16_t CPU::Pop() {
+	uint16_t result = Combine(state.memory[state.sp], state.memory[state.sp + 1]);
+	state.sp += 2;
+	return result;
+}
+
 void CPU::Step() {
 	uint8_t* inst = &state.memory[state.pc];
 	std::cout << std::hex << std::setw(4) << state.pc << " ";
@@ -423,9 +434,7 @@ void CPU::Step() {
 			break;
 		}
 		case 0xC1:	//POP B
-			state.c = state.memory[state.sp];
-			state.b = state.memory[state.sp + 1];
-			state.sp += 2;
+			Split(Pop(), state.c, state.b);
 			break;
 		case 0xC2:	//JNZ addr
 			if (state.conditionCodes.z == 0) {
@@ -442,9 +451,7 @@ void CPU::Step() {
 			break;
 		}
 		case 0xC5:	//PUSH B
-			state.memory[state.sp - 2] = state.c;
-			state.memory[state.sp - 1] = state.b;
-			state.sp -= 2;
+			Push(Combine(state.c, state.b));
 			break;
 		case 0xC6:	//ADI byte
 		{
@@ -469,9 +476,7 @@ void CPU::Step() {
 			break;
 		}
 		case 0xD1:	//POP D
-			state.e = state.memory[state.sp];
-			state.d = state.memory[state.sp + 1];
-			state.sp += 2;
+			Split(Pop(), state.e, state.d);
 			break;
 		case 0xD3:	//OUT byte
 			state.pc += 1;
@@ -482,14 +487,10 @@ void CPU::Step() {
 			state.sp -= 2;
 			break;
 		case 0xE1:	//POP H
-			state.l = state.memory[state.sp];
-			state.h = state.memory[state.sp + 1];
-			state.sp += 2;
+			Split(Pop(), state.l, state.h);
 			break;
 		case 0xE5:	//PUSH H
-			state.memory[state.sp - 2] = state.l;
-			state.memory[state.sp - 1] = state.h;
-			state.sp -= 2;
+			Push(Combine(state.l, state.h));
 			break;
 		case 0xE6:	//ANI byte
 		{
@@ -512,9 +513,8 @@ void CPU::Step() {
 		}
 		case 0xF1:	//POP PSW
 		{
-			uint8_t psw = state.memory[state.sp];
-			state.a = state.memory[state.sp + 1];
-			state.sp += 2;
+			uint8_t psw;
+			Split(Pop(), psw, state.a);
 			state.conditionCodes.cy = psw & 1;
 			state.conditionCodes.p = (psw >> 2) & 1;
 			state.conditionCodes.z = (psw >> 6) & 1;
@@ -527,9 +527,7 @@ void CPU::Step() {
 			psw = (psw << 1) | (state.conditionCodes.z & 1);
 			psw = (psw << 4) | (state.conditionCodes.p & 1);
 			psw = (psw << 2) | (state.conditionCodes.cy & 1);
-			state.memory[state.sp - 2] = psw;
-			state.memory[state.sp - 1] = state.a;
-			state.sp -= 2;
+			Push(Combine(psw, state.a));
 			break;
 		}
 		case 0xFE:	//CPI byte

@@ -43,5 +43,7 @@ private:
 	void SetCarryFlag(uint16_t result);
 	void SetCarryFlag(uint32_t result);
 	void SetAuxCarryFlag(uint8_t a, uint8_t b);
+	void Push(uint16_t value);
+	uint16_t Pop();
 };
 
