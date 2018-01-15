@@ -349,6 +349,7 @@ void CPU::Step() {
 		{
 			uint16_t addr = Combine(inst[1], inst[2]);
 			state.a = state.memory[addr];
+			state.pc += 2;
 			break;
 		}
 		case 0x3B:	//DCR SP
