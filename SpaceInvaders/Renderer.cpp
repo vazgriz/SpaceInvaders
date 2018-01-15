@@ -3,11 +3,18 @@
 #include <vector>
 #include <stdexcept>
 
-#include <GLFW/glfw3.h>
-
 Renderer::Renderer() {
+	glfwInit();
+	CreateWindow();
 }
 
 Renderer::~Renderer() {
+	glfwDestroyWindow(window);
+	glfwTerminate();
+}
 
+void Renderer::CreateWindow() {
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	//glfwWindowHint(GLFW_VISIBLE, false);
+	window = glfwCreateWindow(800, 600, "Space Invaders", nullptr, nullptr);
 }
