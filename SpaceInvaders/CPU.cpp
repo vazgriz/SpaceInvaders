@@ -63,6 +63,7 @@ void CPU::Step() {
 	uint8_t* inst = &state.memory[state.pc];
 	std::cout << std::hex << std::setw(4) << state.pc << " ";
 	Disassemble(inst);
+	std::cout << "\n";
 	state.pc++;
 
 	switch (*inst) {
