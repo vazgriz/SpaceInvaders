@@ -82,7 +82,6 @@ void CPU::Step() {
 			UnrecognizedInstruction();
 			break;
 		case 0x00:	//NOP
-		case 0x08:
 			break;
 		case 0x01:	//LXI B, word
 			state.c = inst[1];
@@ -533,11 +532,6 @@ void CPU::Step() {
 			SetResultFlags(temp);
 			state.pc += 1;
 			break;
-		}
-		case 0xFF:	//RST 7
-		{
-			Push(state.sp);
-			state.sp = 7 * 8;
 		}
 	}
 }
