@@ -3,6 +3,8 @@
 #include <fstream>
 #include <vector>
 
+#include "Disassemble.h"
+
 std::vector<char> ReadFile(const std::string& fileName) {
 	std::ifstream file(fileName, std::ios::binary | std::ios::ate);
 	if (!file) {
@@ -26,6 +28,7 @@ int main(int argc, char* args[]) {
 	std::vector<char> buffer = ReadFile(args[1]);
 
 	std::cout << buffer.size() << " bytes\n";
+	std::cout << Disassemble(buffer) << "\n";
 
 	return EXIT_SUCCESS;
 }
