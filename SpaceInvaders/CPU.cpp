@@ -363,6 +363,9 @@ void CPU::Step() {
 			state.d = state.memory[addr];
 			break;
 		}
+		case 0x5C:	//MOV E, H
+			state.e = state.h;
+			break;
 		case 0x5E:	//MOV E, M
 		{
 			uint16_t addr = Combine(state.l, state.h);
