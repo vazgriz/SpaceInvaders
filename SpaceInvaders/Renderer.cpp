@@ -41,7 +41,7 @@ Renderer::~Renderer() {
 void Renderer::CreateWindow() {
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_VISIBLE, false);
-	window = glfwCreateWindow(800, 600, "Space Invaders", nullptr, nullptr);
+	window = glfwCreateWindow(width, height, "Space Invaders", nullptr, nullptr);
 }
 
 void Renderer::CreateInstance() {
