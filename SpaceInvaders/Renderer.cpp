@@ -18,11 +18,13 @@ Renderer::Renderer() {
 	glfwInit();
 	CreateWindow();
 	CreateInstance();
+	CreateSurface();
 
 	glfwShowWindow(window);
 }
 
 Renderer::~Renderer() {
+	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyInstance(instance, nullptr);
 
 	glfwDestroyWindow(window);
@@ -44,4 +46,8 @@ void Renderer::CreateInstance() {
 	info.ppEnabledExtensionNames = glfwGetRequiredInstanceExtensions(&info.enabledExtensionCount);
 	
 	VK_CHECK(vkCreateInstance(&info, nullptr, &instance), "Failed to create instance");
+}
+
+void Renderer::CreateSurface() {
+	VK_CHECK(glfwCreateWindowSurface(instance, window, nullptr, &surface), "Failed to create surface");
 }

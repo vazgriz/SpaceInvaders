@@ -12,8 +12,10 @@ public:
 private:
 	GLFWwindow* window;
 	VkInstance instance;
+	VkSurfaceKHR surface;
 
 	void CreateWindow();
 	void CreateInstance();
+	void CreateSurface();
 };
 
