@@ -36,11 +36,13 @@ private:
 	VkDevice device;
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
+	VkRenderPass renderPass;
 	VkSwapchainKHR swapchain;
 	std::vector<VkImage> swapchainImages;
 	VkFormat swapchainFormat;
 	VkExtent2D swapchainExtent;
 	std::vector<VkImageView> swapchainImageViews;
+	std::vector<VkFramebuffer> framebuffers;
 	std::vector<VkFence> fences;
 	VkSemaphore acquireImageSemaphore;
 	VkSemaphore renderDoneSemaphore;
@@ -56,12 +58,14 @@ private:
 	SurfaceInfo GetSurfaceInfo(VkPhysicalDevice device);
 	QueueInfo GetQueueInfo(VkPhysicalDevice device);
 	void CreateDevice();
+	void CreateRenderPass();
 	VkSurfaceFormatKHR ChooseSwapchainFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 	VkExtent2D ChooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 	void RecreateSwapchain();
 	void CleanupSwapchain();
 	void CreateSwapchain();
 	void CreateImageViews();
+	void CreateFramebuffers();
 	void CreateFences();
 	void CreateSemaphores();
 	void CreateCommandPool();

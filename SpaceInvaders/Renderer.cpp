@@ -240,15 +240,66 @@ void Renderer::CreateDevice() {
 	vkGetDeviceQueue(device, queueInfo.presentFamily, 0, &presentQueue);
 }
 
+void Renderer::CreateRenderPass() {
+	VkAttachmentDescription attachment = {};
+	attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	attachment.format = swapchainFormat;
+	attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	attachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+	VkAttachmentReference ref = {};
+	ref.attachment = 0;
+	ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass = {};
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &ref;
+
+	VkSubpassDependency fromExternal = {};
+	fromExternal.srcSubpass = VK_SUBPASS_EXTERNAL;
+	fromExternal.dstSubpass = 0;
+	fromExternal.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	fromExternal.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	fromExternal.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	fromExternal.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+	VkSubpassDependency toExternal = {};
+	toExternal.srcSubpass = 0;
+	toExternal.dstSubpass = VK_SUBPASS_EXTERNAL;
+	toExternal.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	toExternal.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	toExternal.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	toExternal.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+	VkSubpassDependency dependencies[] = { fromExternal, toExternal };
+
+	VkRenderPassCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	info.attachmentCount = 1;
+	info.pAttachments = &attachment;
+	info.subpassCount = 1;
+	info.pSubpasses = &subpass;
+	info.dependencyCount = 2;
+	info.pDependencies = dependencies;
+
+	VK_CHECK(vkCreateRenderPass(device, &info, nullptr, &renderPass), "Failed to create render pass");
+}
+
 void Renderer::RecreateSwapchain() {
 	CreateSwapchain();
+	CreateRenderPass();
 	CreateImageViews();
+	CreateFramebuffers();
 	CreateFences();
 }
 
 void Renderer::CleanupSwapchain() {
+	vkDestroyRenderPass(device, renderPass, nullptr);
 	vkDestroySwapchainKHR(device, swapchain, nullptr);
 	for (auto& iv : swapchainImageViews) vkDestroyImageView(device, iv, nullptr);
+	for (auto& fb : framebuffers) vkDestroyFramebuffer(device, fb, nullptr);
 	for (auto& fence : fences) vkDestroyFence(device, fence, nullptr);
 }
 
@@ -359,6 +410,23 @@ void Renderer::CreateImageViews() {
 	}
 }
 
+void Renderer::CreateFramebuffers() {
+	framebuffers.resize(swapchainImages.size());
+
+	for (size_t i = 0; i < framebuffers.size(); i++) {
+		VkFramebufferCreateInfo info = {};
+		info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		info.attachmentCount = 1;
+		info.pAttachments = &swapchainImageViews[i];
+		info.width = width;
+		info.height = height;
+		info.layers = 1;
+		info.renderPass = renderPass;
+
+		VK_CHECK(vkCreateFramebuffer(device, &info, nullptr, &framebuffers[i]), "Failed to create framebuffer");
+	}
+}
+
 void Renderer::CreateFences() {
 	fences.resize(swapchainImages.size());
 
@@ -409,24 +477,15 @@ void Renderer::RecordCommandBuffer(uint32_t index) {
 
 	vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-	VkImageMemoryBarrier barrier = {};
-	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.image = swapchainImages[index];
-	barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	VkRenderPassBeginInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = renderPass;
+	renderPassInfo.framebuffer = framebuffers[index];
+	renderPassInfo.renderArea.extent = swapchainExtent;
 
-	vkCmdPipelineBarrier(commandBuffer,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0,
-		0, nullptr,
-		0, nullptr,
-		1, &barrier);
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	vkCmdEndRenderPass(commandBuffer);
 
 	vkEndCommandBuffer(commandBuffer);
 }
