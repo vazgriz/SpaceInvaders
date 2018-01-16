@@ -16,7 +16,7 @@ private:
 		uint32_t presentQueue;
 	};
 
-	struct SwapchainInfo {
+	struct SurfaceInfo {
 		VkSurfaceCapabilitiesKHR capabilities;
 		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> presentModes;
@@ -27,7 +27,7 @@ private:
 	VkSurfaceKHR surface;
 	VkPhysicalDeviceProperties deviceProperties;
 	QueueInfo queueInfo;
-	SwapchainInfo swapchainInfo;
+	SurfaceInfo surfaceInfo;
 	VkPhysicalDevice physicalDevice;
 	VkDevice device;
 	VkQueue graphicsQueue;
@@ -39,7 +39,7 @@ private:
 	void PickPhysicalDevice();
 	bool IsDeviceSuitable(VkPhysicalDevice device);
 	bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
-	SwapchainInfo GetSwapchainInfo(VkPhysicalDevice device);
+	SurfaceInfo GetSurfaceInfo(VkPhysicalDevice device);
 	QueueInfo GetQueueInfo(VkPhysicalDevice device);
 	void CreateDevice();
 };

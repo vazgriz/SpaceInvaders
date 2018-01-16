@@ -90,15 +90,17 @@ bool Renderer::IsDeviceSuitable(VkPhysicalDevice device) {
 
 	bool extensionsSupported = CheckDeviceExtensionSupport(device);
 
-	bool swapchainAdequate = false;
+	bool surfaceAdequate = false;
+	SurfaceInfo surfaceInfo;
 	if (extensionsSupported) {
-		SwapchainInfo swapchainInfo = GetSwapchainInfo(device);
-		swapchainAdequate = !swapchainInfo.formats.empty() && !swapchainInfo.presentModes.empty();
+		surfaceInfo = GetSurfaceInfo(device);
+		surfaceAdequate = !surfaceInfo.formats.empty() && !surfaceInfo.presentModes.empty();
 	}
 
-	bool suitable = queueInfo.graphicsQueue != ~0u && queueInfo.presentQueue != ~0u && extensionsSupported && swapchainAdequate;
+	bool suitable = queueInfo.graphicsQueue != ~0u && queueInfo.presentQueue != ~0u && extensionsSupported && surfaceAdequate;
 	if (suitable) {
 		this->queueInfo = queueInfo;
+		this->surfaceInfo = surfaceInfo;
 	}
 
 	return suitable;
@@ -120,8 +122,8 @@ bool Renderer::CheckDeviceExtensionSupport(VkPhysicalDevice device) {
 	return requiredExtensions.empty();
 }
 
-Renderer::SwapchainInfo Renderer::GetSwapchainInfo(VkPhysicalDevice device) {
-	SwapchainInfo info;
+Renderer::SurfaceInfo Renderer::GetSurfaceInfo(VkPhysicalDevice device) {
+	SurfaceInfo info;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &info.capabilities);
 
 	uint32_t formatCount;
