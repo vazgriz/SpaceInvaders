@@ -2,6 +2,7 @@
 
 #include <set>
 #include <stdexcept>
+#include <algorithm>
 
 #define VK_CHECK(exp, msg)                         \
 {                                                  \
@@ -19,17 +20,20 @@ const std::vector<const char*> deviceExtensions = {
 };
 
 Renderer::Renderer() {
+	swapchain = VK_NULL_HANDLE;
 	glfwInit();
 	CreateWindow();
 	CreateInstance();
 	CreateSurface();
 	PickPhysicalDevice();
 	CreateDevice();
+	RecreateSwapchain();
 
 	glfwShowWindow(window);
 }
 
 Renderer::~Renderer() {
+	CleanupSwapchain();
 	vkDestroyDevice(device, nullptr);
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyInstance(instance, nullptr);
@@ -196,4 +200,135 @@ void Renderer::CreateDevice() {
 
 	vkGetDeviceQueue(device, queueInfo.graphicsFamily, 0, &graphicsQueue);
 	vkGetDeviceQueue(device, queueInfo.presentFamily, 0, &presentQueue);
+}
+
+void Renderer::RecreateSwapchain() {
+	CreateSwapchain();
+	CreateImageViews();
+	CreateFences();
+}
+
+void Renderer::CleanupSwapchain() {
+	vkDestroySwapchainKHR(device, swapchain, nullptr);
+	for (auto& iv : swapchainImageViews) vkDestroyImageView(device, iv, nullptr);
+	for (auto& fence : fences) vkDestroyFence(device, fence, nullptr);
+}
+
+VkSurfaceFormatKHR Renderer::ChooseSwapchainFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+	if (availableFormats.size() == 1 && availableFormats[0].format == VK_FORMAT_UNDEFINED) {
+		return { VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+	}
+
+	for (const auto& availableFormat : availableFormats) {
+		if ((availableFormat.format == VK_FORMAT_R8G8B8A8_UNORM || availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM) && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			return availableFormat;
+		}
+	}
+
+	throw std::runtime_error("Failed to find suitable surface format");
+}
+
+VkExtent2D Renderer::ChooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+		return capabilities.currentExtent;
+	} else {
+		VkExtent2D actualExtent = { width, height };
+
+		actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
+		actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
+
+		return actualExtent;
+	}
+}
+
+void Renderer::CreateSwapchain() {
+	VkSurfaceFormatKHR surfaceFormat = ChooseSwapchainFormat(surfaceInfo.formats);
+	VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+	VkExtent2D extent = ChooseSwapchainExtent(surfaceInfo.capabilities);
+
+	//if mailbox is chosen, enable triple buffering
+	uint32_t imageCount;
+	if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+		imageCount = 3;
+	} else {
+		imageCount = 2;
+	}
+
+	if (surfaceInfo.capabilities.maxImageCount > 0 && imageCount > surfaceInfo.capabilities.maxImageCount) {
+		imageCount = surfaceInfo.capabilities.maxImageCount;
+	}
+
+	VkSwapchainCreateInfoKHR info = {};
+	info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	info.surface = surface;
+	info.minImageCount = imageCount;
+	info.imageFormat = surfaceFormat.format;
+	info.imageColorSpace = surfaceFormat.colorSpace;
+	info.imageExtent = extent;
+	info.imageArrayLayers = 1;
+	info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+	uint32_t queueFamilyIndices[] = { queueInfo.graphicsFamily, queueInfo.presentFamily };
+
+	if (queueInfo.graphicsFamily != queueInfo.presentFamily) {
+		info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		info.queueFamilyIndexCount = 2;
+		info.pQueueFamilyIndices = queueFamilyIndices;
+	} else {
+		info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		info.queueFamilyIndexCount = 0; // Optional
+		info.pQueueFamilyIndices = nullptr; // Optional
+	}
+
+	info.preTransform = surfaceInfo.capabilities.currentTransform;
+	info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	info.presentMode = presentMode;
+	info.clipped = VK_TRUE;
+
+	VkSwapchainKHR oldSwapchain = swapchain;
+	info.oldSwapchain = oldSwapchain;
+
+	VK_CHECK(vkCreateSwapchainKHR(device, &info, nullptr, &swapchain), "Failed to create swap chain");
+
+	if (oldSwapchain != VK_NULL_HANDLE) {
+		vkDestroySwapchainKHR(device, oldSwapchain, nullptr);
+	}
+
+	vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
+	swapchainImages.resize(imageCount);
+	vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data());
+
+	swapchainFormat = surfaceFormat.format;
+	swapchainExtent = extent;
+}
+
+void Renderer::CreateImageViews() {
+	swapchainImageViews.resize(swapchainImages.size());
+
+	for (size_t i = 0; i < swapchainImages.size(); i++) {
+		VkImageViewCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		createInfo.image = swapchainImages[i];
+		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		createInfo.format = swapchainFormat;
+		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		createInfo.subresourceRange.baseMipLevel = 0;
+		createInfo.subresourceRange.levelCount = 1;
+		createInfo.subresourceRange.baseArrayLayer = 0;
+		createInfo.subresourceRange.layerCount = 1;
+
+		VK_CHECK(vkCreateImageView(device, &createInfo, nullptr, &swapchainImageViews[i]), "Failed to create image views");
+	}
+}
+
+void Renderer::CreateFences() {
+	fences.resize(swapchainImages.size());
+
+	for (size_t i = 0; i < swapchainImages.size(); i++) {
+		VkFenceCreateInfo info = {};
+		info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+		VK_CHECK(vkCreateFence(device, &info, nullptr, &fences[i]), "Failed to create fences");
+	}
 }

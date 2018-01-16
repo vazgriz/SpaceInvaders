@@ -34,6 +34,12 @@ private:
 	VkDevice device;
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
+	VkSwapchainKHR swapchain;
+	std::vector<VkImage> swapchainImages;
+	VkFormat swapchainFormat;
+	VkExtent2D swapchainExtent;
+	std::vector<VkImageView> swapchainImageViews;
+	std::vector<VkFence> fences;
 
 	void CreateWindow();
 	void CreateInstance();
@@ -44,5 +50,12 @@ private:
 	SurfaceInfo GetSurfaceInfo(VkPhysicalDevice device);
 	QueueInfo GetQueueInfo(VkPhysicalDevice device);
 	void CreateDevice();
+	VkSurfaceFormatKHR ChooseSwapchainFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+	VkExtent2D ChooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+	void RecreateSwapchain();
+	void CleanupSwapchain();
+	void CreateSwapchain();
+	void CreateImageViews();
+	void CreateFences();
 };
 
