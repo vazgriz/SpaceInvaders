@@ -11,7 +11,9 @@ public:
 
 private:
 	GLFWwindow* window;
+	VkInstance instance;
 
 	void CreateWindow();
+	void CreateInstance();
 };
 
