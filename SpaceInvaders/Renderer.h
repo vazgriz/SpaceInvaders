@@ -12,8 +12,8 @@ public:
 
 private:
 	struct QueueInfo {
-		uint32_t graphicsQueue;
-		uint32_t presentQueue;
+		uint32_t graphicsFamily;
+		uint32_t presentFamily;
 	};
 
 	struct SurfaceInfo {

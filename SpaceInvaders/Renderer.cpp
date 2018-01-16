@@ -97,7 +97,7 @@ bool Renderer::IsDeviceSuitable(VkPhysicalDevice device) {
 		surfaceAdequate = !surfaceInfo.formats.empty() && !surfaceInfo.presentModes.empty();
 	}
 
-	bool suitable = queueInfo.graphicsQueue != ~0u && queueInfo.presentQueue != ~0u && extensionsSupported && surfaceAdequate;
+	bool suitable = queueInfo.graphicsFamily != ~0u && queueInfo.presentFamily != ~0u && extensionsSupported && surfaceAdequate;
 	if (suitable) {
 		this->queueInfo = queueInfo;
 		this->surfaceInfo = surfaceInfo;
@@ -156,15 +156,15 @@ Renderer::QueueInfo Renderer::GetQueueInfo(VkPhysicalDevice device) {
 
 	for (uint32_t i = 0; i < queueFamilies.size(); i++) {
 		auto& queueFamily = queueFamilies[i];
-		if (info.graphicsQueue == ~0u && queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-			info.graphicsQueue = i;
+		if (info.graphicsFamily == ~0u && queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			info.graphicsFamily = i;
 		}
 
 		VkBool32 presentSupport;
 		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
 
-		if (info.presentQueue == ~0u && queueFamily.queueCount > 0 && presentSupport) {
-			info.presentQueue = i;
+		if (info.presentFamily == ~0u && queueFamily.queueCount > 0 && presentSupport) {
+			info.presentFamily = i;
 		}
 	}
 
@@ -173,7 +173,7 @@ Renderer::QueueInfo Renderer::GetQueueInfo(VkPhysicalDevice device) {
 
 void Renderer::CreateDevice() {
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32_t> uniqueQueueFamilies = { queueInfo.graphicsQueue, queueInfo.presentQueue };
+	std::set<uint32_t> uniqueQueueFamilies = { queueInfo.graphicsFamily, queueInfo.presentFamily };
 
 	float queuePriority = 1.0f;
 	for (int queueFamily : uniqueQueueFamilies) {
@@ -194,6 +194,6 @@ void Renderer::CreateDevice() {
 
 	VK_CHECK(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device), "Failed to create device");
 
-	vkGetDeviceQueue(device, queueInfo.graphicsQueue, 0, &graphicsQueue);
-	vkGetDeviceQueue(device, queueInfo.presentQueue, 0, &presentQueue);
+	vkGetDeviceQueue(device, queueInfo.graphicsFamily, 0, &graphicsQueue);
+	vkGetDeviceQueue(device, queueInfo.presentFamily, 0, &presentQueue);
 }
