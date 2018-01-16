@@ -28,11 +28,18 @@ Renderer::Renderer() {
 	PickPhysicalDevice();
 	CreateDevice();
 	RecreateSwapchain();
+	CreateSemaphores();
+	CreateCommandPool();
+	CreateCommandBuffers();
 
 	glfwShowWindow(window);
 }
 
 Renderer::~Renderer() {
+	vkDeviceWaitIdle(device);
+	vkDestroyCommandPool(device, commandPool, nullptr);
+	vkDestroySemaphore(device, acquireImageSemaphore, nullptr);
+	vkDestroySemaphore(device, renderDoneSemaphore, nullptr);
 	CleanupSwapchain();
 	vkDestroyDevice(device, nullptr);
 	vkDestroySurfaceKHR(instance, surface, nullptr);
@@ -40,6 +47,37 @@ Renderer::~Renderer() {
 
 	glfwDestroyWindow(window);
 	glfwTerminate();
+}
+
+void Renderer::Render() {
+	uint32_t index;
+	vkAcquireNextImageKHR(device, swapchain, ~0ull, acquireImageSemaphore, VK_NULL_HANDLE, &index);
+	vkWaitForFences(device, 1, &fences[index], true, ~0ull);
+	vkResetFences(device, 1, &fences[index]);
+
+	VkPipelineStageFlags waitMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = &acquireImageSemaphore;
+	submitInfo.pWaitDstStageMask = &waitMask;
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &renderDoneSemaphore;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffers[index];
+
+	vkQueueSubmit(graphicsQueue, 1, &submitInfo, fences[index]);
+
+	VkPresentInfoKHR presentInfo = {};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &swapchain;
+	presentInfo.pImageIndices = &index;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = &renderDoneSemaphore;
+
+	vkQueuePresentKHR(presentQueue, &presentInfo);
 }
 
 void Renderer::CreateWindow() {
@@ -331,4 +369,64 @@ void Renderer::CreateFences() {
 
 		VK_CHECK(vkCreateFence(device, &info, nullptr, &fences[i]), "Failed to create fences");
 	}
+}
+
+void Renderer::CreateSemaphores() {
+	VkSemaphoreCreateInfo semaphoreInfo = {};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VK_CHECK(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &acquireImageSemaphore), "Failed to create semaphores");
+	VK_CHECK(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderDoneSemaphore), "Failed to create semaphores");
+}
+
+void Renderer::CreateCommandPool() {
+	VkCommandPoolCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	info.queueFamilyIndex = queueInfo.graphicsFamily;
+
+	VK_CHECK(vkCreateCommandPool(device, &info, nullptr, &commandPool), "Failed to create command pool");
+}
+
+void Renderer::CreateCommandBuffers() {
+	VkCommandBufferAllocateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	info.commandPool = commandPool;
+	info.commandBufferCount = static_cast<uint32_t>(swapchainImageViews.size());
+
+	commandBuffers.resize(swapchainImageViews.size());
+	VK_CHECK(vkAllocateCommandBuffers(device, &info, commandBuffers.data()), "Failed to create command buffer");
+
+	for (uint32_t i = 0; i < commandBuffers.size(); i++) {
+		RecordCommandBuffer(i);
+	}
+}
+
+void Renderer::RecordCommandBuffer(uint32_t index) {
+	VkCommandBuffer& commandBuffer = commandBuffers[index];
+
+	VkCommandBufferBeginInfo beginInfo = {};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+	VkImageMemoryBarrier barrier = {};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.image = swapchainImages[index];
+	barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+	vkCmdPipelineBarrier(commandBuffer,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0,
+		0, nullptr,
+		0, nullptr,
+		1, &barrier);
+
+	vkEndCommandBuffer(commandBuffer);
 }

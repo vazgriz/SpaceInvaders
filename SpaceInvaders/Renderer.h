@@ -10,6 +10,8 @@ public:
 
 	GLFWwindow* GetWindow() const { return window; }
 
+	void Render();
+
 private:
 	struct QueueInfo {
 		uint32_t graphicsFamily;
@@ -40,6 +42,10 @@ private:
 	VkExtent2D swapchainExtent;
 	std::vector<VkImageView> swapchainImageViews;
 	std::vector<VkFence> fences;
+	VkSemaphore acquireImageSemaphore;
+	VkSemaphore renderDoneSemaphore;
+	VkCommandPool commandPool;
+	std::vector<VkCommandBuffer> commandBuffers;
 
 	void CreateWindow();
 	void CreateInstance();
@@ -57,5 +63,9 @@ private:
 	void CreateSwapchain();
 	void CreateImageViews();
 	void CreateFences();
+	void CreateSemaphores();
+	void CreateCommandPool();
+	void CreateCommandBuffers();
+	void RecordCommandBuffer(uint32_t index);
 };
 

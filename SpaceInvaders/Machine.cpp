@@ -23,6 +23,7 @@ Machine::~Machine() {
 void Machine::Run() {
 	while (!glfwWindowShouldClose(renderer.GetWindow())) {
 		glfwPollEvents();
+		renderer.Render();
 	}
 }
 
