@@ -1,6 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
+#include <vector>
 
 class Renderer {
 public:
@@ -10,12 +11,36 @@ public:
 	GLFWwindow* GetWindow() const { return window; }
 
 private:
+	struct QueueInfo {
+		uint32_t graphicsQueue;
+		uint32_t presentQueue;
+	};
+
+	struct SwapchainInfo {
+		VkSurfaceCapabilitiesKHR capabilities;
+		std::vector<VkSurfaceFormatKHR> formats;
+		std::vector<VkPresentModeKHR> presentModes;
+	};
+
 	GLFWwindow* window;
 	VkInstance instance;
 	VkSurfaceKHR surface;
+	VkPhysicalDeviceProperties deviceProperties;
+	QueueInfo queueInfo;
+	SwapchainInfo swapchainInfo;
+	VkPhysicalDevice physicalDevice;
+	VkDevice device;
+	VkQueue graphicsQueue;
+	VkQueue presentQueue;
 
 	void CreateWindow();
 	void CreateInstance();
 	void CreateSurface();
+	void PickPhysicalDevice();
+	bool IsDeviceSuitable(VkPhysicalDevice device);
+	bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
+	SwapchainInfo GetSwapchainInfo(VkPhysicalDevice device);
+	QueueInfo GetQueueInfo(VkPhysicalDevice device);
+	void CreateDevice();
 };
 
