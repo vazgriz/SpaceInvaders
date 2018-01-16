@@ -1,7 +1,7 @@
 #include "Machine.h"
 #include <fstream>
 
-Machine::Machine() {
+Machine::Machine() : display(cpu) {
 	std::ifstream rom("invaders.rom", std::ios::binary | std::ios::ate);
 	size_t size = rom.tellg();
 	std::vector<char> buffer(size);
@@ -23,6 +23,7 @@ Machine::~Machine() {
 void Machine::Run() {
 	while (!glfwWindowShouldClose(renderer.GetWindow())) {
 		glfwPollEvents();
+		display.ConvertImage();
 		renderer.Render();
 	}
 }

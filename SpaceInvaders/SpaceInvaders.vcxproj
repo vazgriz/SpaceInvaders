@@ -121,6 +121,7 @@
   <ItemGroup>
     <ClCompile Include="CPU.cpp" />
     <ClCompile Include="Disassemble.cpp" />
+    <ClCompile Include="Display.cpp" />
     <ClCompile Include="Machine.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Renderer.cpp" />
@@ -128,6 +129,7 @@
   <ItemGroup>
     <ClInclude Include="CPU.h" />
     <ClInclude Include="Disassemble.h" />
+    <ClInclude Include="Display.h" />
     <ClInclude Include="Machine.h" />
     <ClInclude Include="Renderer.h" />
   </ItemGroup>

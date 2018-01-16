@@ -31,6 +31,7 @@ public:
 	CPU();
 	void LoadROM(size_t size, void* data);
 	void Step();
+	void* GetRAM(size_t index) { return &state.memory[index]; }
 
 private:
 	State state;
