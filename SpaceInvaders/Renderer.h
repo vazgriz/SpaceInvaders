@@ -2,9 +2,11 @@
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <vector>
+#include <memory>
 
 #include "Utilities.h"
 #include "Display.h"
+#include "Allocator.h"
 
 class Renderer {
 public:
@@ -38,6 +40,7 @@ private:
 	VkDevice device;
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
+	std::unique_ptr<Allocator> allocator;
 	VkRenderPass renderPass;
 	VkSwapchainKHR swapchain;
 	std::vector<VkImage> swapchainImages;

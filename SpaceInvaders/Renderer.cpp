@@ -30,6 +30,7 @@ Renderer::Renderer() {
 
 Renderer::~Renderer() {
 	vkDeviceWaitIdle(device);
+	allocator.reset();
 	vkDestroyCommandPool(device, commandPool, nullptr);
 	vkDestroySemaphore(device, acquireImageSemaphore, nullptr);
 	vkDestroySemaphore(device, renderDoneSemaphore, nullptr);
@@ -229,6 +230,8 @@ void Renderer::CreateDevice() {
 
 	vkGetDeviceQueue(device, queueInfo.graphicsFamily, 0, &graphicsQueue);
 	vkGetDeviceQueue(device, queueInfo.presentFamily, 0, &presentQueue);
+
+	allocator = std::make_unique<Allocator>(physicalDevice, device);
 }
 
 void Renderer::CreateRenderPass() {

@@ -119,6 +119,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Allocator.cpp" />
     <ClCompile Include="CPU.cpp" />
     <ClCompile Include="Disassemble.cpp" />
     <ClCompile Include="Display.cpp" />
@@ -127,6 +128,7 @@
     <ClCompile Include="Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Allocator.h" />
     <ClInclude Include="CPU.h" />
     <ClInclude Include="Disassemble.h" />
     <ClInclude Include="Display.h" />
