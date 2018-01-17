@@ -22,6 +22,7 @@ Renderer::Renderer() {
 	CreateDevice();
 	RecreateSwapchain();
 	CreateSemaphores();
+	CreateVRAMBuffer();
 	CreateCommandPool();
 	CreateCommandBuffers();
 
@@ -32,6 +33,7 @@ Renderer::~Renderer() {
 	vkDeviceWaitIdle(device);
 	allocator.reset();
 	vkDestroyCommandPool(device, commandPool, nullptr);
+	vkDestroyBuffer(device, vramBuffer, nullptr);
 	vkDestroySemaphore(device, acquireImageSemaphore, nullptr);
 	vkDestroySemaphore(device, renderDoneSemaphore, nullptr);
 	CleanupSwapchain();
@@ -439,6 +441,23 @@ void Renderer::CreateSemaphores() {
 
 	VK_CHECK(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &acquireImageSemaphore), "Failed to create semaphores");
 	VK_CHECK(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderDoneSemaphore), "Failed to create semaphores");
+}
+
+void Renderer::CreateVRAMBuffer() {
+	VkBufferCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	info.size = IMAGE_WIDTH * IMAGE_HEIGHT * 4;
+
+	VK_CHECK(vkCreateBuffer(device, &info, nullptr, &vramBuffer), "Failed to create buffer");
+
+	VkMemoryRequirements requirements;
+	vkGetBufferMemoryRequirements(device, vramBuffer, &requirements);
+
+	Allocation alloc = allocator->Alloc(requirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	vkBindBufferMemory(device, vramBuffer, alloc.memory, alloc.offset);
+	vkMapMemory(device, alloc.memory, alloc.offset, IMAGE_WIDTH * IMAGE_HEIGHT * 4, 0, &vramMapping);
 }
 
 void Renderer::CreateCommandPool() {

@@ -14,6 +14,7 @@ public:
 	~Renderer();
 
 	GLFWwindow* GetWindow() const { return window; }
+	void* GetVRAMMapping() const { return vramMapping; }
 
 	void Render();
 
@@ -51,6 +52,8 @@ private:
 	std::vector<VkFence> fences;
 	VkSemaphore acquireImageSemaphore;
 	VkSemaphore renderDoneSemaphore;
+	VkBuffer vramBuffer;
+	void* vramMapping;
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
 
@@ -73,6 +76,7 @@ private:
 	void CreateFramebuffers();
 	void CreateFences();
 	void CreateSemaphores();
+	void CreateVRAMBuffer();
 	void CreateCommandPool();
 	void CreateCommandBuffers();
 	void RecordCommandBuffer(uint32_t index);

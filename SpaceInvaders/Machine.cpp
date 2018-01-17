@@ -24,6 +24,7 @@ void Machine::Run() {
 	while (!glfwWindowShouldClose(renderer.GetWindow())) {
 		glfwPollEvents();
 		display.ConvertImage();
+		memcpy(renderer.GetVRAMMapping(), display.GetImage().data(), IMAGE_WIDTH * IMAGE_HEIGHT * 4);
 		renderer.Render();
 	}
 }
