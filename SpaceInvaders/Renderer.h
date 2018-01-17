@@ -80,5 +80,8 @@ private:
 	void CreateCommandPool();
 	void CreateCommandBuffers();
 	void RecordCommandBuffer(uint32_t index);
+	VkCommandBuffer GetSingleUseCommandBuffer();
+	void SubmitSingleUseCommandBuffer(VkCommandBuffer commandBuffer);
+	void CopyStaging(size_t size, void* srcMemory, VkBuffer dstBuffer);
 };
 

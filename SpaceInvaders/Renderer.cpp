@@ -522,3 +522,65 @@ void Renderer::RecordCommandBuffer(uint32_t index) {
 
 	vkEndCommandBuffer(commandBuffer);
 }
+
+VkCommandBuffer Renderer::GetSingleUseCommandBuffer() {
+	VkCommandBufferAllocateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	info.commandPool = commandPool;
+	info.commandBufferCount = 1;
+
+	VkCommandBuffer commandBuffer;
+	VK_CHECK(vkAllocateCommandBuffers(device, &info, &commandBuffer), "Failed to allocate command buffer");
+
+	VkCommandBufferBeginInfo beginInfo = {};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+	return commandBuffer;
+}
+
+void Renderer::SubmitSingleUseCommandBuffer(VkCommandBuffer commandBuffer) {
+	vkEndCommandBuffer(commandBuffer);
+
+	VkSubmitInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	info.commandBufferCount = 1;
+	info.pCommandBuffers = &commandBuffer;
+
+	vkQueueSubmit(graphicsQueue, 1, &info, VK_NULL_HANDLE);
+	vkQueueWaitIdle(graphicsQueue);
+
+	vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+}
+
+void Renderer::CopyStaging(size_t size, void* srcMemory, VkBuffer dstBuffer) {
+	VkBufferCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	info.size = size;
+	info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+	VkBuffer staging;
+	VK_CHECK(vkCreateBuffer(device, &info, nullptr, &staging), "Failed to create staging buffer");
+
+	VkMemoryRequirements requirements;
+	vkGetBufferMemoryRequirements(device, staging, &requirements);
+
+	Allocation alloc = allocator->Alloc(requirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	vkBindBufferMemory(device, staging, alloc.memory, alloc.offset);
+
+	void* mapping;
+	vkMapMemory(device, alloc.memory, alloc.offset, size, 0, &mapping);
+
+	memcpy(mapping, srcMemory, size);
+
+	VkCommandBuffer commandBuffer = GetSingleUseCommandBuffer();
+
+	VkBufferCopy copy = {};
+	copy.size = size;
+
+	vkCmdCopyBuffer(commandBuffer, staging, dstBuffer, 1, &copy);
+
+	SubmitSingleUseCommandBuffer(commandBuffer);
+}
