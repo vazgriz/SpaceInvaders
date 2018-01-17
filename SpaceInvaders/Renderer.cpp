@@ -242,7 +242,7 @@ void Renderer::CreateRenderPass() {
 	attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 	attachment.format = swapchainFormat;
 	attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	attachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
 	VkAttachmentReference ref = {};
@@ -484,11 +484,19 @@ void Renderer::RecordCommandBuffer(uint32_t index) {
 
 	vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
+	VkClearValue clear = {};
+	clear.color.float32[0] = 0.125f;
+	clear.color.float32[1] = 0.125f;
+	clear.color.float32[2] = 0.125f;
+	clear.color.float32[3] = 1;
+
 	VkRenderPassBeginInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = renderPass;
 	renderPassInfo.framebuffer = framebuffers[index];
 	renderPassInfo.renderArea.extent = swapchainExtent;
+	renderPassInfo.clearValueCount = 1;
+	renderPassInfo.pClearValues = &clear;
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
