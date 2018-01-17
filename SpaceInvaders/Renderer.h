@@ -29,7 +29,6 @@ private:
 	uint32_t height = 600;
 	VkInstance instance;
 	VkSurfaceKHR surface;
-	VkPhysicalDeviceProperties deviceProperties;
 	QueueInfo queueInfo;
 	SurfaceInfo surfaceInfo;
 	VkPhysicalDevice physicalDevice;

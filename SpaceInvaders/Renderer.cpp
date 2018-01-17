@@ -123,8 +123,6 @@ void Renderer::PickPhysicalDevice() {
 	if (physicalDevice == VK_NULL_HANDLE) {
 		throw std::runtime_error("Failed to find a suitable GPU");
 	}
-
-	vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
 }
 
 bool Renderer::IsDeviceSuitable(VkPhysicalDevice device) {
