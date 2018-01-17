@@ -3,6 +3,9 @@
 #include <GLFW/glfw3.h>
 #include <vector>
 
+#include "Utilities.h"
+#include "Display.h"
+
 class Renderer {
 public:
 	Renderer();
