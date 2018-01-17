@@ -12,6 +12,24 @@ const std::vector<const char*> deviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
+struct Vertex {
+	struct {
+		float x, y;
+	} pos;
+	struct {
+		float u, v;
+	} tex;
+};
+
+std::vector<Vertex> vertices = {
+	{ { -IMAGE_WIDTH / 2, -IMAGE_HEIGHT / 2 }, { 0, 0 } },
+	{ {  IMAGE_WIDTH / 2, -IMAGE_HEIGHT / 2 }, { 1, 0 } },
+	{ { -IMAGE_WIDTH / 2,  IMAGE_HEIGHT / 2 }, { 0, 1 } },
+	{ {  IMAGE_WIDTH / 2, -IMAGE_HEIGHT / 2 }, { 1, 0 } },
+	{ {  IMAGE_WIDTH / 2,  IMAGE_HEIGHT / 2 }, { 1, 1 } },
+	{ { -IMAGE_WIDTH / 2,  IMAGE_HEIGHT / 2 }, { 0, 1 } }
+};
+
 Renderer::Renderer() {
 	swapchain = VK_NULL_HANDLE;
 	glfwInit();
