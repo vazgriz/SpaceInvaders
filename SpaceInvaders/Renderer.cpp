@@ -331,13 +331,7 @@ void Renderer::CreateSwapchain() {
 	VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
 	VkExtent2D extent = ChooseSwapchainExtent(surfaceInfo.capabilities);
 
-	//if mailbox is chosen, enable triple buffering
-	uint32_t imageCount;
-	if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-		imageCount = 3;
-	} else {
-		imageCount = 2;
-	}
+	uint32_t imageCount = 2;
 
 	if (surfaceInfo.capabilities.maxImageCount > 0 && imageCount > surfaceInfo.capabilities.maxImageCount) {
 		imageCount = surfaceInfo.capabilities.maxImageCount;
