@@ -54,6 +54,7 @@ private:
 	VkSemaphore renderDoneSemaphore;
 	VkBuffer vramBuffer;
 	void* vramMapping;
+	VkBuffer vertexBuffer;
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
 
@@ -77,6 +78,7 @@ private:
 	void CreateFences();
 	void CreateSemaphores();
 	void CreateVRAMBuffer();
+	void CreateVertexBuffer();
 	void CreateCommandPool();
 	void CreateCommandBuffers();
 	void RecordCommandBuffer(uint32_t index);

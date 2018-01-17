@@ -38,10 +38,11 @@ Renderer::Renderer() {
 	CreateSurface();
 	PickPhysicalDevice();
 	CreateDevice();
+	CreateCommandPool();
 	RecreateSwapchain();
 	CreateSemaphores();
 	CreateVRAMBuffer();
-	CreateCommandPool();
+	CreateVertexBuffer();
 	CreateCommandBuffers();
 
 	glfwShowWindow(window);
@@ -52,6 +53,7 @@ Renderer::~Renderer() {
 	allocator.reset();
 	vkDestroyCommandPool(device, commandPool, nullptr);
 	vkDestroyBuffer(device, vramBuffer, nullptr);
+	vkDestroyBuffer(device, vertexBuffer, nullptr);
 	vkDestroySemaphore(device, acquireImageSemaphore, nullptr);
 	vkDestroySemaphore(device, renderDoneSemaphore, nullptr);
 	CleanupSwapchain();
@@ -470,6 +472,23 @@ void Renderer::CreateVRAMBuffer() {
 
 	vkBindBufferMemory(device, vramBuffer, alloc.memory, alloc.offset);
 	vkMapMemory(device, alloc.memory, alloc.offset, IMAGE_WIDTH * IMAGE_HEIGHT * 4, 0, &vramMapping);
+}
+
+void Renderer::CreateVertexBuffer() {
+	VkBufferCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	info.size = sizeof(Vertex) * vertices.size();
+
+	VK_CHECK(vkCreateBuffer(device, &info, nullptr, &vertexBuffer), "Failed to create buffer");
+
+	VkMemoryRequirements requirements;
+	vkGetBufferMemoryRequirements(device, vertexBuffer, &requirements);
+
+	Allocation alloc = allocator->Alloc(requirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	vkBindBufferMemory(device, vertexBuffer, alloc.memory, alloc.offset);
+
+	CopyStaging(sizeof(Vertex) * vertices.size(), vertices.data(), vertexBuffer);
 }
 
 void Renderer::CreateCommandPool() {
