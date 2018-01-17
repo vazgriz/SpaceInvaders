@@ -602,4 +602,6 @@ void Renderer::CopyStaging(size_t size, void* srcMemory, VkBuffer dstBuffer) {
 	vkCmdCopyBuffer(commandBuffer, staging, dstBuffer, 1, &copy);
 
 	SubmitSingleUseCommandBuffer(commandBuffer);
+
+	vkDestroyBuffer(device, staging, nullptr);
 }
