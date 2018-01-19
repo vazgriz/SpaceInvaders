@@ -3,11 +3,10 @@
 
 layout(location = 0) in vec2 uv; 
 
-//layout(set = 0, binding = 0) uniform sampler2D texture1;
+layout(set = 0, binding = 0) uniform sampler2D texture1;
 
 layout(location = 0) out vec4 fragColor;
 
 void main(){
-    //fragColor = texture(texture1, uv);
-    fragColor = vec4(1.0, 0.0, 0.0, 0.0);
+    fragColor = texture(texture1, uv);
 }
