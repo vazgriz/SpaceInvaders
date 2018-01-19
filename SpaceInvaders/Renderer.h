@@ -55,6 +55,12 @@ private:
 	VkBuffer vramBuffer;
 	void* vramMapping;
 	VkBuffer vertexBuffer;
+	VkImage texture;
+	VkImageView imageView;
+	VkSampler sampler;
+	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorPool descriptorPool;
+	VkDescriptorSet descriptorSet;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;
 	VkCommandPool commandPool;
@@ -81,6 +87,13 @@ private:
 	void CreateSemaphores();
 	void CreateVRAMBuffer();
 	void CreateVertexBuffer();
+	void CreateTexture();
+	void CreateImageView();
+	void CreateSampler();
+	void CreateDescriptorLayout();
+	void CreateDescriptorPool();
+	void CreateDescriptorSet();
+	void WriteDescriptorSet();
 	VkShaderModule CreateShader(const std::string& fileName);
 	void CreatePipeline();
 	void CreateCommandPool();

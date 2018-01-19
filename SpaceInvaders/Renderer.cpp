@@ -42,10 +42,17 @@ Renderer::Renderer() {
 	PickPhysicalDevice();
 	CreateDevice();
 	CreateCommandPool();
-	RecreateSwapchain();
-	CreateSemaphores();
 	CreateVRAMBuffer();
 	CreateVertexBuffer();
+	CreateTexture();
+	CreateImageView();
+	CreateSampler();
+	CreateDescriptorLayout();
+	CreateDescriptorPool();
+	CreateDescriptorSet();
+	WriteDescriptorSet();
+	RecreateSwapchain();
+	CreateSemaphores();
 	CreateCommandBuffers();
 
 	glfwShowWindow(window);
@@ -54,12 +61,17 @@ Renderer::Renderer() {
 Renderer::~Renderer() {
 	vkDeviceWaitIdle(device);
 	allocator.reset();
+	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 	vkDestroyCommandPool(device, commandPool, nullptr);
-	vkDestroyBuffer(device, vramBuffer, nullptr);
-	vkDestroyBuffer(device, vertexBuffer, nullptr);
 	vkDestroySemaphore(device, acquireImageSemaphore, nullptr);
 	vkDestroySemaphore(device, renderDoneSemaphore, nullptr);
 	CleanupSwapchain();
+	vkDestroySampler(device, sampler, nullptr);
+	vkDestroyImageView(device, imageView, nullptr);
+	vkDestroyImage(device, texture, nullptr);
+	vkDestroyBuffer(device, vramBuffer, nullptr);
+	vkDestroyBuffer(device, vertexBuffer, nullptr);
 	vkDestroyDevice(device, nullptr);
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyInstance(instance, nullptr);
@@ -495,6 +507,111 @@ void Renderer::CreateVertexBuffer() {
 	vkBindBufferMemory(device, vertexBuffer, alloc.memory, alloc.offset);
 
 	CopyStaging(sizeof(Vertex) * vertices.size(), vertices.data(), vertexBuffer);
+}
+
+void Renderer::CreateTexture() {
+	VkImageCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	info.format = VK_FORMAT_R8G8B8A8_UNORM;
+	info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	info.extent = { IMAGE_WIDTH, IMAGE_HEIGHT, 1 };
+	info.arrayLayers = 1;
+	info.mipLevels = 1;
+	info.imageType = VK_IMAGE_TYPE_2D;
+	info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	info.samples = VK_SAMPLE_COUNT_1_BIT;
+
+	VK_CHECK(vkCreateImage(device, &info, nullptr, &texture), "Failed to create texture");
+
+	VkMemoryRequirements requirements;
+	vkGetImageMemoryRequirements(device, texture, &requirements);
+
+	Allocation alloc = allocator->Alloc(requirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	vkBindImageMemory(device, texture, alloc.memory, alloc.offset);
+}
+
+void Renderer::CreateImageView() {
+	VkImageViewCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	info.image = texture;
+	info.format = VK_FORMAT_R8G8B8A8_UNORM;
+	info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	info.subresourceRange.baseArrayLayer = 0;
+	info.subresourceRange.layerCount = 1;
+	info.subresourceRange.baseMipLevel = 0;
+	info.subresourceRange.levelCount = 1;
+
+	VK_CHECK(vkCreateImageView(device, &info, nullptr, &imageView), "Failed to create image view");
+}
+
+void Renderer::CreateSampler() {
+	VkSamplerCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	info.minFilter = VK_FILTER_LINEAR;
+	info.magFilter = VK_FILTER_LINEAR;
+	info.maxAnisotropy = 1.0f;
+	info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+
+	VK_CHECK(vkCreateSampler(device, &info, nullptr, &sampler), "Failed to create sampler");
+}
+
+void Renderer::CreateDescriptorLayout() {
+	VkDescriptorSetLayoutBinding binding = {};
+	binding.binding = 0;
+	binding.descriptorCount = 1;
+	binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkDescriptorSetLayoutCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	info.bindingCount = 1;
+	info.pBindings = &binding;
+
+	VK_CHECK(vkCreateDescriptorSetLayout(device, &info, nullptr, &descriptorSetLayout), "Failed to create descriptor set layout");
+}
+
+void Renderer::CreateDescriptorPool() {
+	VkDescriptorPoolSize size = {};
+	size.descriptorCount = 1;
+	size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+	VkDescriptorPoolCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	info.maxSets = 1;
+	info.poolSizeCount = 1;
+	info.pPoolSizes = &size;
+	VK_CHECK(vkCreateDescriptorPool(device, &info, nullptr, &descriptorPool), "Failed to create descriptor pool");
+}
+
+void Renderer::CreateDescriptorSet() {
+	VkDescriptorSetAllocateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	info.descriptorPool = descriptorPool;
+	info.descriptorSetCount = 1;
+	info.pSetLayouts = &descriptorSetLayout;
+	
+	VK_CHECK(vkAllocateDescriptorSets(device, &info, &descriptorSet), "Failed to allocate descriptor sets");
+}
+
+void Renderer::WriteDescriptorSet() {
+	VkDescriptorImageInfo imageInfo = {};
+	imageInfo.imageView = imageView;
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	imageInfo.sampler = sampler;
+
+	VkWriteDescriptorSet write = {};
+	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write.dstSet = descriptorSet;
+	write.dstBinding = 0;
+	write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	write.descriptorCount = 1;
+	write.pImageInfo = &imageInfo;
+	
+	vkUpdateDescriptorSets(device, 1, &write, 0, nullptr);
 }
 
 VkShaderModule Renderer::CreateShader(const std::string& fileName) {
