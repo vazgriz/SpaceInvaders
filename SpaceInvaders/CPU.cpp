@@ -230,6 +230,7 @@ void CPU::Step() {
 			uint8_t temp = state.conditionCodes.cy & 1;
 			state.conditionCodes.cy = (state.a >> 7);
 			state.a = (state.a << 1) | temp;
+			break;
 		}
 		case 0x19:	//DAD D
 		{
