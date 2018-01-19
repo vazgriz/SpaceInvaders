@@ -107,7 +107,7 @@ void CPU::Step() {
 		std::lock_guard<std::mutex> lock(mutex);
 		if (queue.size() > 0) {
 			auto interrupt = queue.front();
-			if (instructionCount > interrupt.target) {
+			if (instructionCount >= interrupt.target) {
 				queue.pop();
 				Push(state.pc);
 				state.pc = static_cast<uint16_t>(interrupt.value * 8);
