@@ -35,6 +35,8 @@ public:
 	void Step();
 	void* GetRAM(size_t index) { return &state.memory[index]; }
 	void QueueInterrupt(size_t value, size_t instructionDelay);
+	void SetInput(size_t index, uint8_t value);
+	uint8_t GetOutput(size_t index);
 
 private:
 	struct Interrupt {
@@ -46,6 +48,10 @@ private:
 	std::mutex mutex;
 	std::queue<Interrupt> queue;
 
+	uint8_t inputs[4];
+	uint8_t outputs[7];
+	uint16_t shiftRegister;
+
 	void UnrecognizedInstruction();
 	uint16_t Combine(uint8_t low, uint8_t high);
 	void Split(uint16_t value, uint8_t& low, uint8_t& high);
@@ -56,5 +62,7 @@ private:
 	void SetAuxCarryFlag(uint8_t a, uint8_t b);
 	void Push(uint16_t value);
 	uint16_t Pop();
+	uint8_t ReadInput(uint8_t index);
+	void WriteOutput(uint8_t index, uint8_t value);
 };
 

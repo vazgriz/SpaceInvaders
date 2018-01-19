@@ -9,6 +9,7 @@
 CPU::CPU() {
 	state = {};
 	state.memory.resize(16 * 1024);
+	shiftRegister = 0;
 }
 
 void CPU::LoadROM(size_t size, void* data) {
@@ -68,6 +69,30 @@ uint16_t CPU::Pop() {
 	uint16_t result = Combine(state.memory[state.sp], state.memory[state.sp + 1]);
 	state.sp += 2;
 	return result;
+}
+
+void CPU::SetInput(size_t index, uint8_t value) {
+	inputs[index] = value;
+}
+
+uint8_t CPU::GetOutput(size_t index) {
+	return outputs[index];
+}
+
+uint8_t CPU::ReadInput(uint8_t index) {
+	if (index == 3) {
+		return shiftRegister >> (8 - (outputs[2] & 0x7));
+	} else {
+		return inputs[index];
+	}
+}
+
+void CPU::WriteOutput(uint8_t index, uint8_t value) {
+	if (index == 4) {
+		shiftRegister = (static_cast<uint16_t>(value) << 8) | (shiftRegister >> 8);
+	} else {
+		outputs[index] = value;
+	}
 }
 
 void CPU::QueueInterrupt(size_t value, size_t intstructionDelay) {
