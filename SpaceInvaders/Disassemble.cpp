@@ -741,19 +741,19 @@ void Disassemble(const uint8_t* inst) {
 			break;
 
 		case 0xf0:
-			std::cout << "RP";
+			std::cout << "RPE";
 			break;
 		case 0xf1:
 			std::cout << "POP    PSW";
 			break;
 		case 0xf2:
-			std::cout << "JP     " << static_cast<uint16_t>(inst[2]) << static_cast<uint16_t>(inst[1]);
+			std::cout << "JPE     " << static_cast<uint16_t>(inst[2]) << static_cast<uint16_t>(inst[1]);
 			break;
 		case 0xf3:
 			std::cout << "DI";
 			break;
 		case 0xf4:
-			std::cout << "CP     " << static_cast<uint16_t>(inst[2]) << static_cast<uint16_t>(inst[1]);
+			std::cout << "CPE     " << static_cast<uint16_t>(inst[2]) << static_cast<uint16_t>(inst[1]);
 			break;
 		case 0xf5:
 			std::cout << "PUSH   PSW";
