@@ -95,10 +95,15 @@ void CPU::WriteOutput(uint8_t index, uint8_t value) {
 	}
 }
 
+void CPU::Interrupt(size_t value) {
+	Push(state.pc);
+	state.pc = static_cast<uint16_t>(value * 8);
+}
+
 void CPU::QueueInterrupt(size_t value, size_t intstructionDelay) {
 	if (state.interruptEnable) {
 		std::lock_guard<std::mutex> lock(mutex);
-		queue.push(CPU::Interrupt{ value, instructionCount + intstructionDelay });
+		queue.push(CPU::Interrupt_t{ value, instructionCount + intstructionDelay });
 	}
 }
 
@@ -109,8 +114,7 @@ void CPU::Step() {
 			auto interrupt = queue.front();
 			if (instructionCount >= interrupt.target) {
 				queue.pop();
-				Push(state.pc);
-				state.pc = static_cast<uint16_t>(interrupt.value * 8);
+				Interrupt(interrupt.value);
 			}
 		}
 	}
@@ -1145,8 +1149,7 @@ void CPU::Step() {
 		}
 		case 0xC7:	//RST 0
 		{
-			Push(state.pc);
-			state.pc = 0 * 8;
+			Interrupt(0);
 			break;
 		}
 		case 0xC8:	//RZ
@@ -1191,8 +1194,7 @@ void CPU::Step() {
 		}
 		case 0xCF:	//RST 1
 		{
-			Push(state.pc);
-			state.pc = 1 * 8;
+			Interrupt(1);
 			break;
 		}
 		case 0xD0:	//RNC
@@ -1235,8 +1237,7 @@ void CPU::Step() {
 		}
 		case 0xD7:	//RST 2
 		{
-			Push(state.pc);
-			state.pc = 2 * 8;
+			Interrupt(2);
 			break;
 		}
 		case 0xD8:	//RC
@@ -1274,8 +1275,7 @@ void CPU::Step() {
 		}
 		case 0xDF:	//RST 3
 		{
-			Push(state.pc);
-			state.pc = 3 * 8;
+			Interrupt(3);
 			break;
 		}
 		case 0xE0:	//RPO
@@ -1323,8 +1323,7 @@ void CPU::Step() {
 		}
 		case 0xE7:	//RST 4
 		{
-			Push(state.pc);
-			state.pc = 4 * 8;
+			Interrupt(4);
 			break;
 		}
 		case 0xE8:	//RPE
@@ -1372,8 +1371,7 @@ void CPU::Step() {
 		}
 		case 0xEF:	//RST 5
 		{
-			Push(state.pc);
-			state.pc = 5 * 8;
+			Interrupt(5);
 			break;
 		}
 		case 0xF0:	//RPE
@@ -1429,8 +1427,7 @@ void CPU::Step() {
 		}
 		case 0xF7:	//RST 6
 		{
-			Push(state.pc);
-			state.pc = 6 * 8;
+			Interrupt(6);
 			break;
 		}
 		case 0xF8:	//RM
@@ -1467,8 +1464,7 @@ void CPU::Step() {
 		}
 		case 0xFF:	//RST 7
 		{
-			Push(state.pc);
-			state.pc = 7 * 8;
+			Interrupt(7);
 			break;
 		}
 	}

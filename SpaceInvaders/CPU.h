@@ -39,14 +39,14 @@ public:
 	uint8_t GetOutput(size_t index);
 
 private:
-	struct Interrupt {
+	struct Interrupt_t {
 		size_t value;
 		size_t target;
 	};
 	State state;
 	size_t instructionCount = 0;
 	std::mutex mutex;
-	std::queue<Interrupt> queue;
+	std::queue<Interrupt_t> queue;
 
 	uint8_t inputs[4];
 	uint8_t outputs[7];
@@ -64,5 +64,6 @@ private:
 	uint16_t Pop();
 	uint8_t ReadInput(uint8_t index);
 	void WriteOutput(uint8_t index, uint8_t value);
+	void Interrupt(size_t value);
 };
 
