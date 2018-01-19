@@ -519,10 +519,15 @@ void CPU::Step() {
 			Split(Pop(), state.e, state.d);
 			break;
 		case 0xD3:	//OUT byte
+			WriteOutput(inst[1], state.a);
 			state.pc += 1;
 			break;
 		case 0xD5:	//PUSH D
 			Push(Combine(state.e, state.d));
+			break;
+		case 0xDB:	//IN byte
+			state.a = ReadInput(inst[1]);
+			state.pc += 1;
 			break;
 		case 0xE1:	//POP H
 			Split(Pop(), state.l, state.h);
