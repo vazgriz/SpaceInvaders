@@ -1,6 +1,8 @@
 #pragma once
 #include <stdint.h>
 #include <vector>
+#include <mutex>
+#include <queue>
 	
 struct ConditionCodes {
 	uint8_t z;
@@ -32,9 +34,17 @@ public:
 	void LoadROM(size_t size, void* data);
 	void Step();
 	void* GetRAM(size_t index) { return &state.memory[index]; }
+	void QueueInterrupt(size_t value, size_t instructionDelay);
 
 private:
+	struct Interrupt {
+		size_t value;
+		size_t target;
+	};
 	State state;
+	size_t instructionCount = 0;
+	std::mutex mutex;
+	std::queue<Interrupt> queue;
 
 	void UnrecognizedInstruction();
 	uint16_t Combine(uint8_t low, uint8_t high);

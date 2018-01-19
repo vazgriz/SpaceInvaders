@@ -70,9 +70,27 @@ uint16_t CPU::Pop() {
 	return result;
 }
 
+void CPU::QueueInterrupt(size_t value, size_t intstructionDelay) {
+	std::lock_guard<std::mutex> lock(mutex);
+	queue.push(CPU::Interrupt{ value, instructionCount + intstructionDelay });
+}
+
 void CPU::Step() {
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+		if (queue.size() > 0) {
+			auto interrupt = queue.front();
+			if (instructionCount > interrupt.target) {
+				queue.pop();
+				Push(state.pc);
+				state.pc = static_cast<uint16_t>(interrupt.value * 8);
+			}
+		}
+	}
+
 	uint8_t* inst = &state.memory[state.pc];
 	state.pc++;
+	instructionCount++;
 
 	switch (*inst) {
 		default:
