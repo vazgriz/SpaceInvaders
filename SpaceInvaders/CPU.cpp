@@ -1115,16 +1115,14 @@ void CPU::Step() {
 			break;
 		case 0xC2:	//JNZ addr
 			if (state.conditionCodes.z == 0) {
-				uint16_t addr = Combine(inst[1], inst[2]);
-				state.pc = addr;
+				state.pc = Combine(inst[1], inst[2]);
 			} else {
 				state.pc += 2;
 			}
 			break;
 		case 0xC3:	//JMP addr
 		{
-			uint16_t addr = Combine(inst[1], inst[2]);
-			state.pc = addr;
+			state.pc = Combine(inst[1], inst[2]);
 			break;
 		}
 		case 0xC4:	//CNZ
