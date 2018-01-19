@@ -2,6 +2,7 @@
 
 #include <set>
 #include <algorithm>
+#include <cmath>
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -824,8 +825,9 @@ void Renderer::RecordCommandBuffer(uint32_t index) {
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &offset);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-	glm::mat4 projection = glm::ortho(-(width / 2.0f), (width / 2.0f), -(height / 2.0f), (height / 2.0f), 0.0f, 1.0f);
-	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &projection);
+	glm::mat4 matrix = glm::ortho(-(width / 2.0f), (width / 2.0f), -(height / 2.0f), (height / 2.0f), 0.0f, 1.0f);
+	matrix = matrix * glm::rotate(glm::mat4(), -static_cast<float>(M_PI) / 2, glm::vec3(0, 0, 1));
+	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &matrix);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
 	vkCmdDraw(commandBuffer, 6, 1, 0, 0);
