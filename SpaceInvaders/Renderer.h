@@ -55,6 +55,8 @@ private:
 	VkBuffer vramBuffer;
 	void* vramMapping;
 	VkBuffer vertexBuffer;
+	VkPipelineLayout pipelineLayout;
+	VkPipeline pipeline;
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
 
@@ -79,6 +81,8 @@ private:
 	void CreateSemaphores();
 	void CreateVRAMBuffer();
 	void CreateVertexBuffer();
+	VkShaderModule CreateShader(const std::string& fileName);
+	void CreatePipeline();
 	void CreateCommandPool();
 	void CreateCommandBuffers();
 	void RecordCommandBuffer(uint32_t index);

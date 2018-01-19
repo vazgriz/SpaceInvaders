@@ -2,6 +2,9 @@
 
 #include <set>
 #include <algorithm>
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 const std::vector<const char*> layers = {
 	"VK_LAYER_LUNARG_standard_validation",
@@ -309,9 +312,12 @@ void Renderer::RecreateSwapchain() {
 	CreateImageViews();
 	CreateFramebuffers();
 	CreateFences();
+	CreatePipeline();
 }
 
 void Renderer::CleanupSwapchain() {
+	vkDestroyPipeline(device, pipeline, nullptr);
+	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 	vkDestroyRenderPass(device, renderPass, nullptr);
 	vkDestroySwapchainKHR(device, swapchain, nullptr);
 	for (auto& iv : swapchainImageViews) vkDestroyImageView(device, iv, nullptr);
@@ -491,6 +497,124 @@ void Renderer::CreateVertexBuffer() {
 	CopyStaging(sizeof(Vertex) * vertices.size(), vertices.data(), vertexBuffer);
 }
 
+VkShaderModule Renderer::CreateShader(const std::string& fileName) {
+	std::vector<char> data = LoadFile(fileName);
+
+	VkShaderModuleCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	info.codeSize = static_cast<uint32_t>(data.size());
+	info.pCode = reinterpret_cast<uint32_t*>(data.data());
+
+	VkShaderModule _module;
+	VK_CHECK(vkCreateShaderModule(device, &info, nullptr, &_module), "Failed to create shader module");
+
+	return _module;
+}
+
+void Renderer::CreatePipeline() {
+	VkShaderModule vertShader = CreateShader("Shaders/invaders.vert.spv");
+	VkShaderModule fragShader = CreateShader("Shaders/invaders.frag.spv");
+
+	VkPipelineShaderStageCreateInfo vertStage = {};
+	vertStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vertStage.module = vertShader;
+	vertStage.pName = "main";
+	vertStage.stage = VK_SHADER_STAGE_VERTEX_BIT;
+
+	VkPipelineShaderStageCreateInfo fragStage = {};
+	fragStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fragStage.module = fragShader;
+	fragStage.pName = "main";
+	fragStage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkPipelineShaderStageCreateInfo stages[] = { vertStage, fragStage };
+
+	VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
+	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+	VkVertexInputBindingDescription bindings[] = {
+		{ 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX },
+	};
+
+	VkVertexInputAttributeDescription attributes[] = {
+		{ 0, 0, VK_FORMAT_R32G32_SFLOAT, 0 },
+		{ 1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, tex) },
+	};
+
+	VkPipelineVertexInputStateCreateInfo vertexInput = {};
+	vertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInput.vertexBindingDescriptionCount = 1;
+	vertexInput.pVertexBindingDescriptions = bindings;
+	vertexInput.vertexAttributeDescriptionCount = 2;
+	vertexInput.pVertexAttributeDescriptions = attributes;
+
+	VkPipelineRasterizationStateCreateInfo rasterization = {};
+	rasterization.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterization.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterization.lineWidth = 1.0f;
+	rasterization.cullMode = VK_CULL_MODE_NONE;
+
+	VkViewport viewport = {};
+	viewport.width = static_cast<float>(width);
+	viewport.height = static_cast<float>(height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+
+	VkRect2D clipping = {};
+	clipping.extent = swapchainExtent;
+
+	VkPipelineViewportStateCreateInfo viewportState = {};
+	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportState.viewportCount = 1;
+	viewportState.pViewports = &viewport;
+	viewportState.scissorCount = 1;
+	viewportState.pScissors = &clipping;
+
+	VkPipelineColorBlendAttachmentState attachment = {};
+	attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	attachment.blendEnable = VK_FALSE;
+
+	VkPipelineColorBlendStateCreateInfo blending = {};
+	blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	blending.attachmentCount = 1;
+	blending.pAttachments = &attachment;
+
+	VkPipelineMultisampleStateCreateInfo multisample = {};
+	multisample.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	VkPushConstantRange range = {};
+	range.size = 64;
+	range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	VkPipelineLayoutCreateInfo layoutInfo = {};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	layoutInfo.pushConstantRangeCount = 1;
+	layoutInfo.pPushConstantRanges = &range;
+	
+	VK_CHECK(vkCreatePipelineLayout(device, &layoutInfo, nullptr, &pipelineLayout), "Failed to create pipeline layout");
+
+	VkGraphicsPipelineCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	info.stageCount = 2;
+	info.pStages = stages;
+	info.pInputAssemblyState = &inputAssembly;
+	info.pVertexInputState = &vertexInput;
+	info.pRasterizationState = &rasterization;
+	info.pViewportState = &viewportState;
+	info.pColorBlendState = &blending;
+	info.pMultisampleState = &multisample;
+	info.renderPass = renderPass;
+	info.subpass = 0;
+	info.layout = pipelineLayout;
+	
+	VK_CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &info, nullptr, &pipeline), "Failed to create pipeline");
+
+	vkDestroyShaderModule(device, vertShader, nullptr);
+	vkDestroyShaderModule(device, fragShader, nullptr);
+}
+
 void Renderer::CreateCommandPool() {
 	VkCommandPoolCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -536,6 +660,15 @@ void Renderer::RecordCommandBuffer(uint32_t index) {
 	renderPassInfo.pClearValues = &clear;
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	VkDeviceSize offset = 0;
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &offset);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+	glm::mat4 projection = glm::ortho(-(width / 2.0f), (width / 2.0f), -(height / 2.0f), (height / 2.0f), 0.0f, 1.0f);
+	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &projection);
+
+	vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
 	vkCmdEndRenderPass(commandBuffer);
 
