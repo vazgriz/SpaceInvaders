@@ -1,14 +1,9 @@
 #include "Machine.h"
-#include <fstream>
 
 Machine::Machine() : display(cpu) {
-	std::ifstream rom("invaders.rom", std::ios::binary | std::ios::ate);
-	size_t size = rom.tellg();
-	std::vector<char> buffer(size);
-	rom.seekg(0, std::ios::beg);
-	rom.read(buffer.data(), size);
+	std::vector<char> rom = LoadFile("invaders.rom");
 
-	cpu.LoadROM(size, buffer.data());
+	cpu.LoadROM(rom.size(), rom.data());
 
 	emuThread = std::thread([=] {
 		Emulate();

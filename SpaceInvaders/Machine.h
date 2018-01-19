@@ -4,6 +4,7 @@
 #include "CPU.h"
 #include "Display.h"
 #include "Renderer.h"
+#include "Utilities.h"
 
 class Machine {
 public:
