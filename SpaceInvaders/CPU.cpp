@@ -96,12 +96,14 @@ void CPU::WriteOutput(uint8_t index, uint8_t value) {
 }
 
 void CPU::QueueInterrupt(size_t value, size_t intstructionDelay) {
-	std::lock_guard<std::mutex> lock(mutex);
-	queue.push(CPU::Interrupt{ value, instructionCount + intstructionDelay });
+	if (state.interruptEnable) {
+		std::lock_guard<std::mutex> lock(mutex);
+		queue.push(CPU::Interrupt{ value, instructionCount + intstructionDelay });
+	}
 }
 
 void CPU::Step() {
-	{
+	if (state.interruptEnable) {
 		std::lock_guard<std::mutex> lock(mutex);
 		if (queue.size() > 0) {
 			auto interrupt = queue.front();
