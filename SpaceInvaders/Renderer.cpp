@@ -477,7 +477,7 @@ void Renderer::CreateVRAMBuffer() {
 void Renderer::CreateVertexBuffer() {
 	VkBufferCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	info.size = sizeof(Vertex) * vertices.size();
 
 	VK_CHECK(vkCreateBuffer(device, &info, nullptr, &vertexBuffer), "Failed to create buffer");
