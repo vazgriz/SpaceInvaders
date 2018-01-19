@@ -100,22 +100,28 @@ void CPU::Interrupt(size_t value) {
 	state.pc = static_cast<uint16_t>(value * 8);
 }
 
-void CPU::QueueInterrupt(size_t value, size_t intstructionDelay) {
+void CPU::QueueInterrupt(size_t value, size_t instructionDelay) {
 	if (state.interruptEnable) {
-		std::lock_guard<std::mutex> lock(mutex);
-		queue.push(CPU::Interrupt_t{ value, instructionCount + intstructionDelay });
+		queue.push(CPU::Interrupt_t{ value, instructionCount + instructionDelay });
 	}
 }
 
+void CPU::AddFrame() {
+	frameCount.fetch_add(1, std::memory_order_relaxed);
+}
+
 void CPU::Step() {
-	if (state.interruptEnable) {
-		std::lock_guard<std::mutex> lock(mutex);
-		if (queue.size() > 0) {
-			auto interrupt = queue.front();
-			if (instructionCount >= interrupt.target) {
-				queue.pop();
-				Interrupt(interrupt.value);
-			}
+	uint32_t count = frameCount.exchange(0, std::memory_order_relaxed);
+
+	for (uint32_t i = 0; i < count * 2; i++) {
+		QueueInterrupt(2, i * 5000);
+	}
+
+	if (!queue.empty()) {
+		auto interrupt = queue.front();
+		if (instructionCount >= interrupt.target) {
+			queue.pop();
+			Interrupt(interrupt.value);
 		}
 	}
 
