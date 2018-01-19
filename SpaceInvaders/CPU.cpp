@@ -1286,7 +1286,6 @@ void CPU::Step() {
 			break;
 		case 0xE2:	//JPO addr
 			if (!state.conditionCodes.p) {
-				Push(state.pc);
 				state.pc = Combine(inst[1], inst[2]);
 			} else {
 				state.pc += 2;
@@ -1334,7 +1333,6 @@ void CPU::Step() {
 			break;
 		case 0xEA:	//JPE addr
 			if (state.conditionCodes.p) {
-				Push(state.pc);
 				state.pc = Combine(inst[1], inst[2]);
 			} else {
 				state.pc += 2;
@@ -1389,7 +1387,6 @@ void CPU::Step() {
 		}
 		case 0xF2:	//JPE addr
 			if (state.conditionCodes.p) {
-				Push(state.pc);
 				state.pc = Combine(inst[1], inst[2]);
 			} else {
 				state.pc += 2;
@@ -1435,7 +1432,6 @@ void CPU::Step() {
 			break;
 		case 0xFA:	//JM addr
 			if (state.conditionCodes.s) {
-				Push(state.pc);
 				state.pc = Combine(inst[1], inst[2]);
 			} else {
 				state.pc += 2;
