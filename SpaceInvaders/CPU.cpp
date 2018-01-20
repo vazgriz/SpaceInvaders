@@ -57,7 +57,72 @@ void CPU::SetCarryFlag(uint32_t result) {
 void CPU::SetAuxCarryFlag(uint8_t a, uint8_t b) {
 	a &= 0xF;
 	b &= 0xF;
-	state.conditionCodes.ac = (a + b) > 16;
+	state.conditionCodes.ac = (a + b) > 15;
+}
+
+uint8_t CPU::Add(uint8_t a, uint8_t b) {
+	uint16_t result = static_cast<uint16_t>(a) + static_cast<uint16_t>(b);
+	SetCarryFlag(result);
+	SetAuxCarryFlag(a, b);
+	SetResultFlags(static_cast<uint8_t>(result));
+
+	return static_cast<uint8_t>(result);
+}
+
+uint16_t CPU::Add(uint16_t a, uint16_t b) {
+	uint32_t result = static_cast<uint32_t>(a) + static_cast<uint32_t>(b);
+	SetCarryFlag(result);
+
+	return static_cast<uint16_t>(result);
+}
+
+uint8_t CPU::ADC(uint8_t a, uint8_t b) {
+	uint16_t result = static_cast<uint16_t>(a) + static_cast<uint16_t>(b) + state.conditionCodes.cy;
+	SetCarryFlag(result);
+	SetAuxCarryFlag(a, b);
+	SetResultFlags(static_cast<uint8_t>(result));
+
+	return static_cast<uint8_t>(result);
+}
+
+uint8_t CPU::SBB(uint8_t a, uint8_t b) {
+	uint16_t result = static_cast<uint16_t>(a) - static_cast<uint16_t>(b) - state.conditionCodes.cy;
+	SetCarryFlag(result);
+	SetAuxCarryFlag(a, -b);
+	SetResultFlags(static_cast<uint8_t>(result));
+
+	return static_cast<uint8_t>(result);
+}
+
+uint8_t CPU::ANA(uint8_t a, uint8_t b) {
+	uint8_t result = a & b;
+	state.conditionCodes.cy = 0;
+	SetResultFlags(result);
+
+	return static_cast<uint8_t>(result);
+}
+
+uint8_t CPU::XRA(uint8_t a, uint8_t b) {
+	uint8_t result = a ^ b;
+	state.conditionCodes.cy = 0;
+	state.conditionCodes.ac = 0;
+	SetResultFlags(result);
+
+	return static_cast<uint8_t>(result);
+}
+
+uint8_t CPU::ORA(uint8_t a, uint8_t b) {
+	uint8_t result = a | b;
+	state.conditionCodes.cy = 0;
+	SetResultFlags(result);
+
+	return static_cast<uint8_t>(result);
+}
+
+void CPU::CMP(uint8_t a, uint8_t b) {
+	uint16_t result = static_cast<uint16_t>(a) - static_cast<uint16_t>(b);
+	SetCarryFlag(result);
+	SetResultFlags(static_cast<uint8_t>(result));
 }
 
 void CPU::Push(uint16_t value) {
@@ -150,20 +215,15 @@ void CPU::Step() {
 			break;
 		case 0x03:	//INX B
 		{
-			uint16_t temp = Combine(state.c, state.b);
-			temp++;
+			uint16_t temp = Combine(state.c, state.b) + 1;
 			Split(temp, state.c, state.b);
 			break;
 		}
 		case 0x04:	//INR B
-			SetResultFlags(state.b + 1);
-			SetAuxCarryFlag(state.b, 1);
-			state.b++;
+			state.b = Add(state.b, 1);
 			break;
 		case 0x05:	//DCR B
-			SetResultFlags(state.b - 1);
-			SetAuxCarryFlag(state.b, -1);
-			state.b--;
+			state.b = Add(state.b, -1);
 			break;
 		case 0x06:	//MVI B, byte
 			state.b = inst[1];
@@ -175,9 +235,8 @@ void CPU::Step() {
 			break;
 		case 0x09:	//DAD B
 		{
-			uint32_t temp = Combine(state.l, state.h) + Combine(state.c, state.b);
-			SetCarryFlag(temp);
-			Split(static_cast<uint16_t>(temp & 0xFFFF), state.l, state.h);
+			uint16_t temp = Add(Combine(state.l, state.h), Combine(state.c, state.b));
+			Split(temp, state.l, state.h);
 			break;
 		}
 		case 0x0A:	//LDAX B
@@ -185,20 +244,15 @@ void CPU::Step() {
 			break;
 		case 0x0B:	//DCX B
 		{
-			uint16_t temp = Combine(state.c, state.b);
-			temp--;
+			uint16_t temp = Combine(state.c, state.b) - 1;
 			Split(temp, state.c, state.b);
 			break;
 		}
 		case 0x0C:	//INR C
-			SetResultFlags(state.c + 1);
-			SetAuxCarryFlag(state.c, 1);
-			state.c++;
+			state.c = Add(state.c, 1);
 			break;
 		case 0x0D:	//DCR C
-			SetResultFlags(state.c - 1);
-			SetAuxCarryFlag(state.c, -1);
-			state.c--;
+			state.c = Add(state.c, -1);
 			break;
 		case 0x0E:	//MVI C, byte
 			state.c = inst[1];
@@ -218,20 +272,15 @@ void CPU::Step() {
 			break;
 		case 0x13:	//INX D
 		{
-			uint16_t temp = Combine(state.e, state.d);
-			temp++;
+			uint16_t temp = Combine(state.e, state.d) + 1;
 			Split(temp, state.e, state.d);
 			break;
 		}
-		case 0x14:	//INR B
-			SetResultFlags(state.d + 1);
-			SetAuxCarryFlag(state.d, 1);
-			state.d++;
+		case 0x14:	//INR D
+			state.d = Add(state.d, 1);
 			break;
 		case 0x15:	//DCR D
-			SetResultFlags(state.d - 1);
-			SetAuxCarryFlag(state.d, -1);
-			state.d--;
+			state.d = Add(state.d, -1);
 			break;
 		case 0x16:	//MVI D, byte
 			state.d = inst[1];
@@ -246,9 +295,8 @@ void CPU::Step() {
 		}
 		case 0x19:	//DAD D
 		{
-			uint32_t temp = Combine(state.l, state.h) + Combine(state.e, state.d);
-			SetCarryFlag(temp);
-			Split(static_cast<uint16_t>(temp & 0xFFFF), state.l, state.h);
+			uint16_t temp = Add(Combine(state.l, state.h), Combine(state.e, state.d));
+			Split(temp, state.l, state.h);
 			break;
 		}
 		case 0x1A:	//LDAX D
@@ -256,20 +304,15 @@ void CPU::Step() {
 			break;
 		case 0x1B:	//DCX D
 		{
-			uint16_t temp = Combine(state.e, state.d);
-			temp--;
+			uint16_t temp = Combine(state.e, state.d) - 1;
 			Split(temp, state.e, state.d);
 			break;
 		}
 		case 0x1C:	//INR E
-			SetResultFlags(state.e + 1);
-			SetAuxCarryFlag(state.e, 1);
-			state.e++;
+			state.e = Add(state.e, 1);
 			break;
 		case 0x1D:	//DCR E
-			SetResultFlags(state.e - 1);
-			SetAuxCarryFlag(state.e, -1);
-			state.e--;
+			state.e = Add(state.e, -1);
 			break;
 		case 0x1E:	//MVI E, byte
 			state.e = inst[1];
@@ -297,20 +340,15 @@ void CPU::Step() {
 		}
 		case 0x23:	//INX H
 		{
-			uint16_t temp = Combine(state.l, state.h);
-			temp++;
+			uint16_t temp = Combine(state.l, state.h) + 1;
 			Split(temp, state.l, state.h);
 			break;
 		}
 		case 0x24:	//INR H
-			SetResultFlags(state.h + 1);
-			SetAuxCarryFlag(state.h, 1);
-			state.h++;
+			state.h = Add(state.h, 1);
 			break;
 		case 0x25:	//DCR H
-			SetResultFlags(state.h - 1);
-			SetAuxCarryFlag(state.h, -1);
-			state.h--;
+			state.h = Add(state.h, -1);
 			break;
 		case 0x26:	//MVI H, byte
 			state.h = inst[1];
@@ -318,9 +356,8 @@ void CPU::Step() {
 			break;
 		case 0x29:	//DAD H
 		{
-			uint32_t temp = Combine(state.l, state.h) + Combine(state.l, state.h);
-			SetCarryFlag(temp);
-			Split(static_cast<uint16_t>(temp & 0xFFFF), state.l, state.h);
+			uint32_t temp = Add(Combine(state.l, state.h), Combine(state.l, state.h));
+			Split(temp, state.l, state.h);
 			break;
 		}
 		case 0x2A:	//LHLD addr
@@ -333,20 +370,15 @@ void CPU::Step() {
 		}
 		case 0x2B:	//DCX H
 		{
-			uint16_t temp = Combine(state.l, state.h);
-			temp--;
+			uint16_t temp = Combine(state.l, state.h) - 1;
 			Split(temp, state.l, state.h);
 			break;
 		}
 		case 0x2C:	//INR L
-			SetResultFlags(state.l + 1);
-			SetAuxCarryFlag(state.l, 1);
-			state.l++;
+			state.l = Add(state.l, 1);
 			break;
 		case 0x2D:	//DCR L
-			SetResultFlags(state.l - 1);
-			SetAuxCarryFlag(state.l, -1);
-			state.l--;
+			state.l = Add(state.l, -1);
 			break;
 		case 0x2E:	//MVI L, byte
 			state.l = inst[1];
@@ -372,17 +404,13 @@ void CPU::Step() {
 		case 0x34:	//INR M
 		{
 			uint8_t& temp = state.memory[Combine(state.l, state.h)];
-			SetResultFlags(temp + 1);
-			SetAuxCarryFlag(temp, 1);
-			temp++;
+			temp = Add(temp, 1);
 			break;
 		}
 		case 0x35:	//DCR M
 		{
 			uint8_t& temp = state.memory[Combine(state.l, state.h)];
-			SetResultFlags(temp - 1);
-			SetAuxCarryFlag(temp, -1);
-			temp--;
+			temp = Add(temp, -1);
 			break;
 		}
 		case 0x36:	//MVI M, byte
@@ -397,9 +425,8 @@ void CPU::Step() {
 			break;
 		case 0x39:	//DAD SP
 		{
-			uint32_t temp = Combine(state.l, state.h) + state.sp;
-			SetCarryFlag(temp);
-			Split(static_cast<uint16_t>(temp & 0xFFFF), state.l, state.h);
+			uint32_t temp = Add(Combine(state.l, state.h), state.sp);
+			Split(temp, state.l, state.h);
 			break;
 		}
 		case 0x3A:	//LDA addr
@@ -413,14 +440,10 @@ void CPU::Step() {
 			state.sp--;
 			break;
 		case 0x3C:	//INR A
-			SetResultFlags(state.a + 1);
-			SetAuxCarryFlag(state.a, 1);
-			state.a++;
+			state.a = Add(state.a, 1);
 			break;
 		case 0x3D:	//DCR A
-			SetResultFlags(state.a - 1);
-			SetAuxCarryFlag(state.a, -1);
-			state.a--;
+			state.a = Add(state.a, -1);
 			break;
 		case 0x3E:	//MVI A, byte
 			state.a = inst[1];
@@ -655,464 +678,202 @@ void CPU::Step() {
 		case 0x7F:	//MOV A, A
 			break;
 		case 0x80:	//ADD B
-		{
-			uint8_t temp = state.a + state.b;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(state.b)));
-			state.a = temp;
+			state.a = Add(state.a, state.b);
 			break;
-		}
 		case 0x81:	//ADD C
-		{
-			uint8_t temp = state.a + state.c;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(state.c)));
-			state.a = temp;
+			state.a = Add(state.a, state.c);
 			break;
-		}
 		case 0x82:	//ADD D
-		{
-			uint8_t temp = state.a + state.d;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(state.d)));
-			state.a = temp;
+			state.a = Add(state.a, state.d);
 			break;
-		}
 		case 0x83:	//ADD E
-		{
-			uint8_t temp = state.a + state.e;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(state.e)));
-			state.a = temp;
+			state.a = Add(state.a, state.e);
 			break;
-		}
 		case 0x84:	//ADD H
-		{
-			uint8_t temp = state.a + state.h;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(state.h)));
-			state.a = temp;
+			state.a = Add(state.a, state.h);
 			break;
-		}
 		case 0x85:	//ADD L
-		{
-			uint8_t temp = state.a + state.l;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(state.l)));
-			state.a = temp;
+			state.a = Add(state.a, state.l);
 			break;
-		}
 		case 0x86:	//ADD M
 		{
 			uint16_t addr = Combine(state.l, state.h);
 			uint8_t value = state.memory[addr];
-			uint8_t temp = state.a + value;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(value)));
-			state.a = temp;
+			state.a = Add(state.a, value);
 			break;
 		}
 		case 0x87:	//ADD A
-		{
-			uint8_t temp = state.a + state.a;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(state.a)));
-			state.a = temp;
+			state.a = Add(state.a, state.a);
 			break;
-		}
 		case 0x88:	//ADC B
-		{
-			uint8_t temp = state.a + state.b + state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(state.b + state.conditionCodes.cy)));
-			state.a = temp;
+			state.a = ADC(state.a, state.b);
 			break;
-		}
 		case 0x89:	//ADC C
-		{
-			uint8_t temp = state.a + state.c + state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(state.c) + state.conditionCodes.cy));
-			state.a = temp;
+			state.a = ADC(state.a, state.c);
 			break;
-		}
 		case 0x8A:	//ADC D
-		{
-			uint8_t temp = state.a + state.d + state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(state.d) + state.conditionCodes.cy));
-			state.a = temp;
+			state.a = ADC(state.a, state.d);
 			break;
-		}
 		case 0x8B:	//ADC E
-		{
-			uint8_t temp = state.a + state.e + state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(state.e) + state.conditionCodes.cy));
-			state.a = temp;
+			state.a = ADC(state.a, state.e);
 			break;
-		}
 		case 0x8C:	//ADC H
-		{
-			uint8_t temp = state.a + state.h + state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(state.h) + state.conditionCodes.cy));
-			state.a = temp;
+			state.a = ADC(state.a, state.h);
 			break;
-		}
 		case 0x8D:	//ADC L
-		{
-			uint8_t temp = state.a + state.l + state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(state.l) + state.conditionCodes.cy));
-			state.a = temp;
+			state.a = ADC(state.a, state.l);
 			break;
-		}
 		case 0x8E:	//ADC M
 		{
 			uint16_t addr = Combine(state.l, state.h);
 			uint8_t value = state.memory[addr];
-			uint8_t temp = state.a + value + state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(value) + state.conditionCodes.cy));
-			state.a = temp;
+			state.a = ADC(state.a, value);
 			break;
 		}
 		case 0x8F:	//ADC A
-		{
-			uint8_t temp = state.a + state.a + state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) + static_cast<uint16_t>(state.a) + state.conditionCodes.cy));
-			state.a = temp;
+			state.a = ADC(state.a, state.a);
 			break;
-		}
 		case 0x90:	//SUB B
-		{
-			uint8_t temp = state.a - state.b;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(state.b)));
-			state.a = temp;
+			state.a = Add(state.a, -state.b);
 			break;
-		}
 		case 0x91:	//SUB C
-		{
-			uint8_t temp = state.a - state.c;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(state.c)));
-			state.a = temp;
+			state.a = Add(state.a, -state.c);
 			break;
-		}
 		case 0x92:	//SUB D
-		{
-			uint8_t temp = state.a - state.d;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(state.d)));
-			state.a = temp;
+			state.a = Add(state.a, -state.d);
 			break;
-		}
 		case 0x93:	//SUB E
-		{
-			uint8_t temp = state.a - state.e;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(state.e)));
-			state.a = temp;
+			state.a = Add(state.a, -state.e);
 			break;
-		}
 		case 0x94:	//SUB H
-		{
-			uint8_t temp = state.a - state.h;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(state.h)));
-			state.a = temp;
+			state.a = Add(state.a, -state.h);
 			break;
-		}
 		case 0x95:	//SUB L
-		{
-			uint8_t temp = state.a - state.l;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(state.l)));
-			state.a = temp;
+			state.a = Add(state.a, -state.l);
 			break;
-		}
 		case 0x96:	//SUB M
 		{
 			uint16_t addr = Combine(state.l, state.h);
 			uint8_t value = state.memory[addr];
 			uint8_t temp = state.a - value;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(value)));
-			state.a = temp;
+			state.a = Add(state.a, -value);
 			break;
 		}
 		case 0x97:	//SUB A
-		{
-			uint8_t temp = state.a - state.a;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(state.a)));
-			state.a = temp;
+			state.a = Add(state.a, -state.a);
 			break;
-		}
 		case 0x98:	//SBB B
-		{
-			uint8_t temp = state.a - state.b - state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(state.b - state.conditionCodes.cy)));
-			state.a = temp;
+			state.a = SBB(state.a, state.b);
 			break;
-		}
 		case 0x99:	//SBB C
-		{
-			uint8_t temp = state.a - state.c - state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(state.c) - state.conditionCodes.cy));
-			state.a = temp;
+			state.a = SBB(state.a, state.c);
 			break;
-		}
 		case 0x9A:	//SBB D
-		{
-			uint8_t temp = state.a - state.d - state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(state.d) - state.conditionCodes.cy));
-			state.a = temp;
+			state.a = SBB(state.a, state.d);
 			break;
-		}
 		case 0x9B:	//SBB E
-		{
-			uint8_t temp = state.a - state.e - state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(state.e) - state.conditionCodes.cy));
-			state.a = temp;
+			state.a = SBB(state.a, state.e);
 			break;
-		}
 		case 0x9C:	//SBB H
-		{
-			uint8_t temp = state.a - state.h - state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(state.h) - state.conditionCodes.cy));
-			state.a = temp;
+			state.a = SBB(state.a, state.h);
 			break;
-		}
 		case 0x9D:	//SBB L
-		{
-			uint8_t temp = state.a - state.l - state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(state.l) - state.conditionCodes.cy));
-			state.a = temp;
+			state.a = SBB(state.a, state.l);
 			break;
-		}
 		case 0x9E:	//SBB M
 		{
 			uint16_t addr = Combine(state.l, state.h);
 			uint8_t value = state.memory[addr];
-			uint8_t temp = state.a - value - state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(value) - state.conditionCodes.cy));
-			state.a = temp;
+			state.a = SBB(state.a, value);
 			break;
 		}
 		case 0x9F:	//SBB A
-		{
-			uint8_t temp = state.a - state.a - state.conditionCodes.cy;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(state.a) - state.conditionCodes.cy));
-			state.a = temp;
+			state.a = SBB(state.a, state.a);
 			break;
-		}
 		case 0xA0:	//ANA B
-		{
-			uint8_t temp = state.a & state.b;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = ANA(state.a, state.b);
 			break;
-		}
 		case 0xA1:	//ANA C
-		{
-			uint8_t temp = state.a & state.c;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = ANA(state.a, state.c);
 			break;
-		}
 		case 0xA2:	//ANA D
-		{
-			uint8_t temp = state.a & state.d;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = ANA(state.a, state.d);
 			break;
-		}
 		case 0xA3:	//ANA E
-		{
-			uint8_t temp = state.a & state.e;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = ANA(state.a, state.e);
 			break;
-		}
 		case 0xA4:	//ANA H
-		{
-			uint8_t temp = state.a & state.h;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = ANA(state.a, state.h);
 			break;
-		}
 		case 0xA5:	//ANA L
-		{
-			uint8_t temp = state.a & state.l;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = ANA(state.a, state.l);
 			break;
-		}
 		case 0xA6:	//ANA M
 		{
 			uint16_t addr = Combine(state.l, state.h);
-			uint8_t temp = state.a & state.memory[addr];
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			uint8_t value = state.memory[addr];
+			state.a = ANA(state.a, value);
 			break;
 		}
 		case 0xA7:	//ANA A
-		{
-			uint8_t temp = state.a & state.a;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = ANA(state.a, state.a);
 			break;
-		}
 		case 0xA8:	//XRA B
-		{
-			uint8_t temp = state.a ^ state.b;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = XRA(state.a, state.b);
 			break;
-		}
 		case 0xA9:	//XRA C
-		{
-			uint8_t temp = state.a ^ state.c;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = XRA(state.a, state.c);
 			break;
-		}
 		case 0xAA:	//XRA D
-		{
-			uint8_t temp = state.a ^ state.d;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = XRA(state.a, state.d);
 			break;
-		}
 		case 0xAB:	//XRA E
-		{
-			uint8_t temp = state.a ^ state.e;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = XRA(state.a, state.e);
 			break;
-		}
 		case 0xAC:	//XRA H
-		{
-			uint8_t temp = state.a ^ state.h;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = XRA(state.a, state.h);
 			break;
-		}
 		case 0xAD:	//XRA L
-		{
-			uint8_t temp = state.a ^ state.l;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = XRA(state.a, state.l);
 			break;
-		}
 		case 0xAE:	//XRA M
 		{
 			uint16_t addr = Combine(state.l, state.h);
-			uint8_t temp = state.a ^ state.memory[addr];
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			uint8_t value = state.memory[addr];
+			state.a = XRA(state.a, value);
 			break;
 		}
 		case 0xAF:	//XRA A
-		{
-			uint8_t temp = state.a ^ state.a;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = XRA(state.a, state.a);
 			break;
-		}
 		case 0xB0:	//ORA B
-		{
-			uint8_t temp = state.a | state.b;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = ORA(state.a, state.b);
 			break;
-		}
 		case 0xB1:	//ORA C
-		{
-			uint8_t temp = state.a | state.c;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = ORA(state.a, state.c);
 			break;
-		}
 		case 0xB2:	//ORA D
-		{
-			uint8_t temp = state.a | state.d;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = ORA(state.a, state.d);
 			break;
-		}
 		case 0xB3:	//ORA E
-		{
-			uint8_t temp = state.a | state.e;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = ORA(state.a, state.e);
 			break;
-		}
 		case 0xB4:	//ORA H
-		{
-			uint8_t temp = state.a | state.h;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = ORA(state.a, state.h);
 			break;
-		}
 		case 0xB5:	//ORA L
-		{
-			uint8_t temp = state.a | state.l;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = ORA(state.a, state.l);
 			break;
-		}
 		case 0xB6:	//ORA M
 		{
 			uint16_t addr = Combine(state.l, state.h);
-			uint8_t temp = state.a | state.memory[addr];
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			uint8_t value = state.memory[addr];
+			state.a = ORA(state.a, value);
 			break;
 		}
 		case 0xB7:	//ORA A
-		{
-			uint8_t temp = state.a | state.a;
-			SetResultFlags(temp);
-			SetCarryFlag(static_cast<uint16_t>(temp));
-			state.a = temp;
+			state.a = ORA(state.a, state.a);
 			break;
-		}
 		case 0xC0:	//RNZ
 			if (!state.conditionCodes.z) {
 				state.pc = Pop();

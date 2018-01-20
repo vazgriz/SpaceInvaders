@@ -60,6 +60,14 @@ private:
 	void SetCarryFlag(uint16_t result);
 	void SetCarryFlag(uint32_t result);
 	void SetAuxCarryFlag(uint8_t a, uint8_t b);
+	uint8_t Add(uint8_t a, uint8_t b);
+	uint16_t Add(uint16_t a, uint16_t b);
+	uint8_t ADC(uint8_t a, uint8_t b);
+	uint8_t SBB(uint8_t a, uint8_t b);
+	uint8_t ANA(uint8_t a, uint8_t b);
+	uint8_t XRA(uint8_t a, uint8_t b);
+	uint8_t ORA(uint8_t a, uint8_t b);
+	void CMP(uint8_t a, uint8_t b);
 	void Push(uint16_t value);
 	uint16_t Pop();
 	uint8_t ReadInput(uint8_t index);
