@@ -1,3 +1,7 @@
+#pragma once
+
+#include <string>
 #include <vector>
 
-std::string Disassemble(const std::vector<char>& buffer);
+void Disassemble(const uint8_t* inst);
+void Disassemble(const std::vector<char>& buffer);

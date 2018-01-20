@@ -28,7 +28,7 @@ int main(int argc, char* args[]) {
 	std::vector<char> buffer = ReadFile(args[1]);
 
 	std::cout << buffer.size() << " bytes\n";
-	std::cout << Disassemble(buffer) << "\n";
+	Disassemble(buffer);
 
 	return EXIT_SUCCESS;
 }
