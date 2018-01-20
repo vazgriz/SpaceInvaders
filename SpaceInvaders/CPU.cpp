@@ -277,9 +277,9 @@ void CPU::Step() {
 			break;
 		case 0x1F:	//RAR
 		{
-			int8_t temp = static_cast<int8_t>(state.a);	//uses C++'s arithmetic shift on signed numbers
-			temp = temp >> 1;
-			state.a = static_cast<uint8_t>(temp);
+			uint8_t temp = state.conditionCodes.cy & 1;
+			state.conditionCodes.cy = state.a & 1;
+			state.a = (state.a >> 1) | (temp << 7);
 			break;
 		}
 		case 0x21:	//LXI H, word
