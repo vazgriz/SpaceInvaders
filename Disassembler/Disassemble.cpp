@@ -28,6 +28,7 @@ void Disassemble(const std::vector<char>& buffer) {
 	
 	while (index < buffer.size()) {
 		const uint8_t* inst = reinterpret_cast<const uint8_t*>(&buffer[index]);
+		std::cout << std::hex << std::setw(4) << index << "  ";
 		Disassemble(inst);
 		index += advance[*inst];
 		std::cout << "\n";
@@ -35,7 +36,7 @@ void Disassemble(const std::vector<char>& buffer) {
 }
 
 void Disassemble(const uint8_t* inst) {
-	std::cout << std::hex << static_cast<uint16_t>(inst[0]) << " ";
+	std::cout << std::setw(2) << static_cast<uint16_t>(inst[0]) << "  ";
 	switch (inst[0]) {
 		case 0x00:
 			std::cout << "NOP 0x00";
