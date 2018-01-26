@@ -1000,6 +1000,7 @@ void CPU::Step() {
 			SetResultFlags(temp);
 			SetCarryFlag(static_cast<uint16_t>(static_cast<uint16_t>(state.a) - static_cast<uint16_t>(inst[1])));
 			state.a = temp;
+			state.pc += 1;
 			break;
 		}
 		case 0xD7:	//RST 2
@@ -1186,6 +1187,7 @@ void CPU::Step() {
 			uint8_t temp = state.a | inst[1];
 			SetResultFlags(temp);
 			SetCarryFlag(static_cast<uint16_t>(temp));
+			state.a = temp;
 			state.pc += 1;
 			break;
 		}
