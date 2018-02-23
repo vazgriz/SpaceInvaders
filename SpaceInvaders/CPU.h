@@ -1,6 +1,8 @@
 #pragma once
 #include <stdint.h>
 #include <vector>
+#include <queue>
+#include <atomic>
 	
 struct ConditionCodes {
 	uint8_t z;
@@ -32,9 +34,23 @@ public:
 	void LoadROM(size_t size, void* data);
 	void Step();
 	void* GetRAM(size_t index) { return &state.memory[index]; }
+	void SetInput(size_t index, uint8_t value);
+	uint8_t GetOutput(size_t index);
+	void AddFrame();
 
 private:
+	struct Interrupt_t {
+		size_t value;
+		size_t target;
+	};
 	State state;
+	size_t instructionCount = 0;
+	std::atomic<uint32_t> frameCount;
+	std::queue<Interrupt_t> queue;
+
+	uint8_t inputs[4];
+	uint8_t outputs[7];
+	uint16_t shiftRegister;
 
 	void UnrecognizedInstruction();
 	uint16_t Combine(uint8_t low, uint8_t high);
@@ -44,7 +60,19 @@ private:
 	void SetCarryFlag(uint16_t result);
 	void SetCarryFlag(uint32_t result);
 	void SetAuxCarryFlag(uint8_t a, uint8_t b);
+	uint8_t Add(uint8_t a, uint8_t b);
+	uint16_t Add(uint16_t a, uint16_t b);
+	uint8_t ADC(uint8_t a, uint8_t b);
+	uint8_t SBB(uint8_t a, uint8_t b);
+	uint8_t ANA(uint8_t a, uint8_t b);
+	uint8_t XRA(uint8_t a, uint8_t b);
+	uint8_t ORA(uint8_t a, uint8_t b);
+	void CMP(uint8_t a, uint8_t b);
 	void Push(uint16_t value);
 	uint16_t Pop();
+	uint8_t ReadInput(uint8_t index);
+	void WriteOutput(uint8_t index, uint8_t value);
+	void QueueInterrupt(size_t value, size_t instructionDelay);
+	void Interrupt(size_t value);
 };
 

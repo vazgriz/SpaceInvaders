@@ -21,6 +21,7 @@ void Machine::Run() {
 		display.ConvertImage();
 		memcpy(renderer.GetVRAMMapping(), display.GetImage().data(), IMAGE_WIDTH * IMAGE_HEIGHT * 4);
 		renderer.Render();
+		cpu.AddFrame();
 	}
 }
 
